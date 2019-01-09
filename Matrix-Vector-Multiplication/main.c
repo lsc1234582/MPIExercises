@@ -5,22 +5,33 @@
 #include "time.h"
 #include "math.h"
 
-#define AROW 3
-#define ACOL 2
-
 #define MAX_VALUE 10
 
 /* Process mapping function */
-int proc_map(int i, int size)
+int proc_map(int i, int size, int arow)
 {
     size -= 1;
-    int r = (int) ceil( (double) AROW / (double) size);
+    int r = (int) ceil( (double) arow / (double) size);
     int proc = i / r;
     return proc + 1;
 }
 
+void print_help(void)
+{
+    printf("Format: main <Number of Row> <Number of Col>\n");
+}
+
 int main(int argc, char** argv)
 {
+    if(argc < 3)
+    {
+        print_help();
+        exit(1);
+    }
+
+    const int AROW = atoi(argv[1]);
+    const int ACOL = atoi(argv[2]);
+
     int size, rank;
     MPI_Status stat;
 
@@ -30,9 +41,13 @@ int main(int argc, char** argv)
 
     if (rank == 0)
     {
-        int a[AROW][ACOL];
-        int b[ACOL];
-        int c[AROW];
+        int** a = (int**) malloc(AROW * ACOL * sizeof(int *));
+        for (int i = 0; i < AROW; ++i)
+        {
+            a[i] = (int*) calloc(ACOL, sizeof(int));
+        }
+        int* b = (int*) calloc(ACOL, sizeof(int));
+        int* c = (int*) calloc(AROW, sizeof(int));
 
         /* Generating Random Values for A & B Array*/
         srand(time(NULL));
@@ -46,7 +61,7 @@ int main(int argc, char** argv)
         }
 
         /* Printing the Matrix*/
-
+#ifdef DEBUG
         printf("Matrix A :\n");
         for (int i=0;i<AROW;i++)
         {
@@ -62,6 +77,7 @@ int main(int argc, char** argv)
             printf("%3d ", b[i]);
         }
         printf("\n\n");
+#endif
 
         /* (1) Sending B Values to other processes */
         for (int j=1;j<size;j++)
@@ -72,17 +88,27 @@ int main(int argc, char** argv)
         /* (2) Sending Required A Values to specific process */
         for (int i=0;i<AROW;i++)
         {
-            int processor = proc_map(i, size);
+            int processor = proc_map(i, size, AROW);
             MPI_Send(a[i], ACOL, MPI_INTEGER, processor, (100*(i+1)), MPI_COMM_WORLD);
         }
 
         /* (3) Gathering the result from other processes*/
         for (int i=0;i<AROW;i++)
         {
-            int source_process = proc_map(i, size);
+            int source_process = proc_map(i, size, AROW);
             MPI_Recv(&c[i], 1, MPI_INTEGER, source_process, i, MPI_COMM_WORLD, &stat);
+#ifdef DEBUG
             printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
+#endif
         }
+
+        for (int i = 0; i < AROW; ++i)
+        {
+            free(a[i]);
+        }
+        free(a);
+        free(b);
+        free(c);
     }
     else
     {
@@ -94,7 +120,7 @@ int main(int argc, char** argv)
         /* (2) Get Required A Values from Master then Compute the result */
         for (int i=0;i<AROW;i++)
         {
-            int processor = proc_map(i, size);
+            int processor = proc_map(i, size, AROW);
             if (rank == processor)
             {
                 int buffer[ACOL];
@@ -109,6 +135,5 @@ int main(int argc, char** argv)
         }
     }
     MPI_Finalize();
-    printf("hahah: %d\n", 12-4-3);
     return 0;
 }
