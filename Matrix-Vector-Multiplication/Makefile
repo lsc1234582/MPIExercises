@@ -1,5 +1,5 @@
 CC=mpicc
-C_FLAGS=-Wall
+C_FLAGS=-Wall -g -O3
 LD_FLAGS=-lm
 
 .PHONY: all

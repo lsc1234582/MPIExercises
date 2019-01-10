@@ -99,21 +99,22 @@ int main(int argc, char** argv)
             /* (1) Sending B Values to other processes */
             for (int j=1;j<size;j++)
             {
-                MPI_Send(b, ACOL, MPI_INTEGER, j, 99, MPI_COMM_WORLD);
+                MPI_Send(b, ACOL, MPI_INT, j, 99, MPI_COMM_WORLD);
             }
 
             /* (2) Sending Required A Values to specific process */
             for (int i=0;i<AROW;i++)
             {
+                MPI_Request request;
                 int processor = proc_map(i, size, AROW);
-                MPI_Send(a[i], ACOL, MPI_INTEGER, processor, (100*(i+1)), MPI_COMM_WORLD);
+                MPI_Isend(a[i], ACOL, MPI_INT, processor, (100*(i+1)), MPI_COMM_WORLD, &request);
             }
 
             /* (3) Gathering the result from other processes*/
             for (int i=0;i<AROW;i++)
             {
                 int source_process = proc_map(i, size, AROW);
-                MPI_Recv(&c[i], 1, MPI_INTEGER, source_process, i, MPI_COMM_WORLD, &stat);
+                MPI_Recv(&c[i], 1, MPI_INT, source_process, i, MPI_COMM_WORLD, &stat);
 #ifdef DEBUG
                 printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
 #endif
@@ -133,7 +134,7 @@ int main(int argc, char** argv)
         int b[ACOL];
 
         /* (1) Each process get B Values from Master */
-        MPI_Recv(b, ACOL, MPI_INTEGER, 0, 99, MPI_COMM_WORLD, &stat);
+        MPI_Recv(b, ACOL, MPI_INT, 0, 99, MPI_COMM_WORLD, &stat);
 
         /* (2) Get Required A Values from Master then Compute the result */
         for (int i=0;i<AROW;i++)
@@ -142,13 +143,13 @@ int main(int argc, char** argv)
             if (rank == processor)
             {
                 int buffer[ACOL];
-                MPI_Recv(buffer, ACOL, MPI_INTEGER, 0, (100*(i+1)), MPI_COMM_WORLD, &stat);
+                MPI_Recv(buffer, ACOL, MPI_INT, 0, (100*(i+1)), MPI_COMM_WORLD, &stat);
                 int sum = 0;
                 for (int j=0;j<ACOL;j++)
                 {
                     sum = sum + (buffer[j] * b[j] );
                 }
-                MPI_Send(&sum, 1, MPI_INTEGER, 0, i, MPI_COMM_WORLD);
+                MPI_Ssend(&sum, 1, MPI_INT, 0, i, MPI_COMM_WORLD);
             }
         }
     }
