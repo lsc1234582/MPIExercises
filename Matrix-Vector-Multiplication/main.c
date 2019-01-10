@@ -79,27 +79,45 @@ int main(int argc, char** argv)
         printf("\n\n");
 #endif
 
-        /* (1) Sending B Values to other processes */
-        for (int j=1;j<size;j++)
+        if (size == 1)
         {
-            MPI_Send(b, ACOL, MPI_INTEGER, j, 99, MPI_COMM_WORLD);
-        }
-
-        /* (2) Sending Required A Values to specific process */
-        for (int i=0;i<AROW;i++)
-        {
-            int processor = proc_map(i, size, AROW);
-            MPI_Send(a[i], ACOL, MPI_INTEGER, processor, (100*(i+1)), MPI_COMM_WORLD);
-        }
-
-        /* (3) Gathering the result from other processes*/
-        for (int i=0;i<AROW;i++)
-        {
-            int source_process = proc_map(i, size, AROW);
-            MPI_Recv(&c[i], 1, MPI_INTEGER, source_process, i, MPI_COMM_WORLD, &stat);
+            /* Serial case */
+            for (int i=0;i<AROW;i++)
+            {
+                for (int j=0; j < ACOL; ++j)
+                {
+                    c[i] += a[i][j] * b[j];
+                }
 #ifdef DEBUG
-            printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
+                printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
 #endif
+            }
+        }
+        else
+        {
+            /* Parallel case */
+            /* (1) Sending B Values to other processes */
+            for (int j=1;j<size;j++)
+            {
+                MPI_Send(b, ACOL, MPI_INTEGER, j, 99, MPI_COMM_WORLD);
+            }
+
+            /* (2) Sending Required A Values to specific process */
+            for (int i=0;i<AROW;i++)
+            {
+                int processor = proc_map(i, size, AROW);
+                MPI_Send(a[i], ACOL, MPI_INTEGER, processor, (100*(i+1)), MPI_COMM_WORLD);
+            }
+
+            /* (3) Gathering the result from other processes*/
+            for (int i=0;i<AROW;i++)
+            {
+                int source_process = proc_map(i, size, AROW);
+                MPI_Recv(&c[i], 1, MPI_INTEGER, source_process, i, MPI_COMM_WORLD, &stat);
+#ifdef DEBUG
+                printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
+#endif
+            }
         }
 
         for (int i = 0; i < AROW; ++i)
