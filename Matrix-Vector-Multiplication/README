@@ -1,2 +1,7 @@
 This is a study of the existing code:
 http://thouth.net/rweasy/-7940DLBO/6236038/banner/http:/www.imkrisna.com/blog/2010/11/matrix-vector-multiplication-mpi-c-source-code/?rndad=3649855628-1547042804
+
+Pre-requisites:
+1. MPI implementation. Tested on OpenMPI-3.1.3 and MPICH-3.3
+2. MPE library. (MPI Parallel Environment library for basic instrumenting, profiling and much more). Tested on
+MPE2-2.4.9b
