@@ -119,13 +119,10 @@ int main(int argc, char** argv)
         else
         {
             /* Parallel case */
-            /* (1) Sending B Values to other processes */
-            for (int j=1;j<size;j++)
-            {
-                MPE_Log_event(Send_Beg, j, "send");
-                MPI_Send(b, ACOL, MPI_INT, j, 99, MPI_COMM_WORLD);
-                MPE_Log_event(Send_End, j, "sent");
-            }
+            /* (1) Broadcasting B Values to other processes */
+            MPE_Log_event(Bcast_Beg, 0, "broadcast");
+            MPI_Bcast(b, ACOL, MPI_INT, 0, MPI_COMM_WORLD);
+            MPE_Log_event(Bcast_End, 0, "broadcasted");
 
             /* (2) Sending Required A Values to specific process */
             for (int i=0;i<AROW;i++)
@@ -162,10 +159,10 @@ int main(int argc, char** argv)
     {
         int b[ACOL];
 
-        /* (1) Each process get B Values from Master */
-        MPE_Log_event(Recv_Beg, 0, "recv");
-        MPI_Recv(b, ACOL, MPI_INT, 0, 99, MPI_COMM_WORLD, &stat);
-        MPE_Log_event(Recv_End, 0, "recvd");
+        /* (1) Receiving B Values from Master broadcast */
+        MPE_Log_event(Bcast_Beg, 0, "broadcast");
+        MPI_Bcast(b, ACOL, MPI_INT, 0, MPI_COMM_WORLD);
+        MPE_Log_event(Bcast_End, 0, "broadcasted");
 
         /* (2) Get Required A Values from Master then Compute the result */
         for (int i=0;i<AROW;i++)
