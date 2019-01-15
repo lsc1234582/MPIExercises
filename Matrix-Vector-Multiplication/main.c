@@ -118,6 +118,7 @@ int main(int argc, char** argv)
         }
         else
         {
+            int sentItemsPlusOne = 1;
             /* Parallel case */
             /* (1) Broadcasting B Values to other processes */
             MPE_Log_event(Bcast_Beg, 0, "broadcast");
@@ -125,25 +126,55 @@ int main(int argc, char** argv)
             MPE_Log_event(Bcast_End, 0, "broadcasted");
 
             /* (2) Sending Required A Values to specific process */
-            for (int i=0;i<AROW;i++)
+            for (int i = 1; i < size; ++i)
             {
-                MPI_Request request;
-                int processor = proc_map(i, size, AROW);
                 MPE_Log_event(Send_Beg, i, "send");
-                MPI_Isend(a[i], ACOL, MPI_INT, processor, (100*(i+1)), MPI_COMM_WORLD, &request);
+                MPI_Send(a[i], ACOL, MPI_INT, i, sentItemsPlusOne, MPI_COMM_WORLD);
                 MPE_Log_event(Send_End, i, "sent");
+                ++sentItemsPlusOne;
+                if(sentItemsPlusOne == AROW + 1)
+                {
+                    break;
+                }
             }
 
             /* (3) Gathering the result from other processes*/
-            for (int i=0;i<AROW;i++)
+            for (int i=0; i<AROW; i++)
             {
-                int source_process = proc_map(i, size, AROW);
+                int resElem;
                 MPE_Log_event(Recv_Beg, i, "recv");
-                MPI_Recv(&c[i], 1, MPI_INT, source_process, i, MPI_COMM_WORLD, &stat);
+                MPI_Recv(&resElem, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
                 MPE_Log_event(Recv_End, i, "recvd");
+                int resIndexPlusOne = stat.MPI_TAG;
+                c[resIndexPlusOne - 1] = resElem;
 #ifdef DEBUG
-                printf("P%d : c[%d]\t= %d\n", rank, i, c[i]);
+                printf("P%d : c[%d]\t= %d\n", rank, resIndexPlusOne - 1, c[resIndexPlusOne - 1]);
 #endif
+                /* If there're more items, dispatch them */
+                if (sentItemsPlusOne < AROW + 1)
+                {
+                    for (int i = 1; i < size; ++i)
+                    {
+                        MPE_Log_event(Send_Beg, i, "send");
+                        MPI_Send(a[i], ACOL, MPI_INT, i, sentItemsPlusOne, MPI_COMM_WORLD);
+                        MPE_Log_event(Send_End, i, "sent");
+                        ++sentItemsPlusOne;
+                        if(sentItemsPlusOne == AROW + 1)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /* (4) Inform all processes jobs' done */
+            for (int i = 1; i < size; ++i)
+            {
+                // message jobsDone is not used
+                int jobsDone = 0;
+                MPE_Log_event(Send_Beg, i, "send");
+                MPI_Send(&jobsDone, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                MPE_Log_event(Send_End, i, "sent");
             }
         }
 
@@ -158,6 +189,7 @@ int main(int argc, char** argv)
     else
     {
         int b[ACOL];
+        int receivedItems = 0;
 
         /* (1) Receiving B Values from Master broadcast */
         MPE_Log_event(Bcast_Beg, 0, "broadcast");
@@ -165,26 +197,31 @@ int main(int argc, char** argv)
         MPE_Log_event(Bcast_End, 0, "broadcasted");
 
         /* (2) Get Required A Values from Master then Compute the result */
-        for (int i=0;i<AROW;i++)
+        while (1)
         {
-            int processor = proc_map(i, size, AROW);
-            if (rank == processor)
+            int buffer[ACOL];
+            MPE_Log_event(Recv_Beg, receivedItems, "recv");
+            MPI_Recv(buffer, ACOL, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+            MPE_Log_event(Recv_End, receivedItems, "recvd");
+            int resIndexPlusOne = stat.MPI_TAG;
+            /* If received tag is 0, then stop */
+            if (resIndexPlusOne == 0)
             {
-                int buffer[ACOL];
-                MPE_Log_event(Recv_Beg, i, "recv");
-                MPI_Recv(buffer, ACOL, MPI_INT, 0, (100*(i+1)), MPI_COMM_WORLD, &stat);
-                MPE_Log_event(Recv_End, i, "recvd");
-                int sum = 0;
-                MPE_Log_event(Compute_Beg, i, "compute");
-                for (int j=0;j<ACOL;j++)
-                {
-                    sum = sum + (buffer[j] * b[j] );
-                }
-                MPE_Log_event(Compute_End, i, "computed");
-                MPE_Log_event(Send_Beg, i, "send");
-                MPI_Ssend(&sum, 1, MPI_INT, 0, i, MPI_COMM_WORLD);
-                MPE_Log_event(Send_End, i, "sent");
+                break;
             }
+            int sum = 0;
+            MPE_Log_event(Compute_Beg, receivedItems, "compute");
+            for (int j=0;j<ACOL;j++)
+            {
+                sum = sum + (buffer[j] * b[j] );
+            }
+            MPE_Log_event(Compute_End, receivedItems, "computed");
+
+            MPE_Log_event(Send_Beg, receivedItems, "send");
+            MPI_Send(&sum, 1, MPI_INT, 0, resIndexPlusOne, MPI_COMM_WORLD);
+            MPE_Log_event(Send_End, receivedItems, "sent");
+
+            ++receivedItems;
         }
     }
     MPE_Finish_log("pmatvec.log");
