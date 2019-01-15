@@ -130,10 +130,9 @@ int main(int argc, char** argv)
             /* (2) Sending Required A Values to specific process */
             for (int i=0;i<AROW;i++)
             {
-                MPI_Request request;
                 int processor = proc_map(i, size, AROW);
                 MPE_Log_event(Send_Beg, i, "send");
-                MPI_Isend(a[i], ACOL, MPI_INT, processor, (100*(i+1)), MPI_COMM_WORLD, &request);
+                MPI_Send(a[i], ACOL, MPI_INT, processor, (100*(i+1)), MPI_COMM_WORLD);
                 MPE_Log_event(Send_End, i, "sent");
             }
 
@@ -185,7 +184,7 @@ int main(int argc, char** argv)
                 }
                 MPE_Log_event(Compute_End, i, "computed");
                 MPE_Log_event(Send_Beg, i, "send");
-                MPI_Ssend(&sum, 1, MPI_INT, 0, i, MPI_COMM_WORLD);
+                MPI_Send(&sum, 1, MPI_INT, 0, i, MPI_COMM_WORLD);
                 MPE_Log_event(Send_End, i, "sent");
             }
         }
