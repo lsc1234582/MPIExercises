@@ -10,7 +10,7 @@ function record {
   rep_count=0;
   record_str="$1,$3,$4,";
   while [ ${rep_count} -le $2 ]; do
-    record_str+="$(TIMEFORMAT="%3R"; time (mpirun -n $1 ./main $3 $4) 2>&1),";
+    record_str+="$(TIMEFORMAT="%3R"; time (mpirun -n $1 --oversubscribe ./main $3 $4) 2>&1),";
     rep_count=$(( rep_count + 1 ));
   done
   printf "${record_str}\n";
@@ -36,15 +36,15 @@ function test_weak_scaling {
   record 1 ${NUM_REP} ${AROW} ${ACOL};
   # Number of processes = 2
   AROW=4096
-  ACOL=4096
+  ACOL=2048
   record 2 ${NUM_REP} ${AROW} ${ACOL};
   # Number of processes = 4
   AROW=8192
-  ACOL=8192
+  ACOL=2048
   record 4 ${NUM_REP} ${AROW} ${ACOL};
   # Number of processes = 8
   AROW=16384
-  ACOL=16384
+  ACOL=2048
   record 8 ${NUM_REP} ${AROW} ${ACOL};
 }
 
