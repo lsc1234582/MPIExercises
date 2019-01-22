@@ -23,14 +23,14 @@ typedef struct {
     int patchI, patchJ;    /* (I,J) location of patch in processor mesh */
     int pNI, pNJ;          /* Size of processor mesh */
     int left, right, up, down;  /* Neighbors to this patch: left = (I,J-1),
-				   up = (I-1,J), etc.  (standard matrix 
-				   ordering) */
-    int ul, ur, ll, lr;    /* Upper left, upper right, lower left, 
-			      lower right (needed for one option of the
-			      9 point stencil) */
+                   up = (I-1,J), etc.  (standard matrix
+                   ordering) */
+    int ul, ur, ll, lr;    /* Upper left, upper right, lower left,
+                  lower right (needed for one option of the
+                  9 point stencil) */
     int gNI, gNJ;          /* Full size of data mesh */
-    int gI, gJ;            /* Global I,J for the upper left corner of the 
-			      local patch */
+    int gI, gJ;            /* Global I,J for the upper left corner of the
+                  local patch */
     int lni, lnj;          /* Size of local patch */
 } MLIFEPatchDesc;
 
@@ -52,65 +52,72 @@ typedef struct {
 
 int MLIFE_ParseArgs( int argc, char **argv, MLIFEOptions *options );
 
-int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options, 
-				  MLIFEPatchDesc *patch );
-int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options, 
-					  MLIFEPatchDesc *patch );
+int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options,
+                  MLIFEPatchDesc *patch );
+int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
+                      MLIFEPatchDesc *patch );
 int MLIFE_PatchCreateDataMeshDesc( MLIFEOptions *options,
-				   MLIFEPatchDesc *patch );
+                   MLIFEPatchDesc *patch );
 int MLIFE_AllocateLocalMesh( MLIFEPatchDesc *patch, int ***m1, int ***m2 );
 int MLIFE_FreeLocalMesh( MLIFEPatchDesc *patch, int **m1, int **m2 );
 int MLIFE_InitLocalMesh( MLIFEPatchDesc *patch, int **m1, int **m2 );
 int MLIFE_TimeIterations( MLIFEPatchDesc *patch, int nIter, int doCheck,
-			  int **m1, int **m2, 
-	  int (*exchangeInit)( MLIFEPatchDesc *, int**, int **, void *), 
-	  int (*exchange)( MLIFEPatchDesc *, int **, MLIFETiming *, void *), 
-			  int (*exchangeEnd)( void * ),
-			  MLIFETiming *timedata );
+              int **m1, int **m2,
+      int (*exchangeInit)( MLIFEPatchDesc *, int**, int **, void *),
+      int (*exchange)( MLIFEPatchDesc *, int **, MLIFETiming *, void *),
+              int (*exchangeEnd)( void * ),
+              MLIFETiming *timedata );
 void MLIFE_Abort( const char str[] );
 
 
 /* pt-2-pt with isend/irecv */
-int MLIFE_ExchangeInitPt2pt( MLIFEPatchDesc *patch, 
-			     int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeInitPt2pt( MLIFEPatchDesc *patch,
+                 int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndPt2pt( void *privateData );
-int MLIFE_ExchangePt2pt( MLIFEPatchDesc *patch, int **matrix, 
-			 MLIFETiming *timedata, void *privateData );
+int MLIFE_ExchangePt2pt( MLIFEPatchDesc *patch, int **matrix,
+             MLIFETiming *timedata, void *privateData );
 /* pt-2-pt with send/irecv */
-int MLIFE_ExchangeInitPt2ptSnd( MLIFEPatchDesc *patch, 
-				int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeInitPt2ptSnd( MLIFEPatchDesc *patch,
+                int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndPt2ptSnd( void *privateData );
-int MLIFE_ExchangePt2ptSnd( MLIFEPatchDesc *patch, int **matrix, 
-			    MLIFETiming *timedata, void *privateData );
+int MLIFE_ExchangePt2ptSnd( MLIFEPatchDesc *patch, int **matrix,
+                MLIFETiming *timedata, void *privateData );
 
 /* pt-2-pt with user pack/unpack */
-int MLIFE_ExchangeInitPt2ptUV( MLIFEPatchDesc *patch, 
-			       int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeInitPt2ptUV( MLIFEPatchDesc *patch,
+                   int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndPt2ptUV( void *privateData );
-int MLIFE_ExchangePt2ptUV( MLIFEPatchDesc *patch, int **matrix, 
-			   MLIFETiming *timedata, void *privateData );
+int MLIFE_ExchangePt2ptUV( MLIFEPatchDesc *patch, int **matrix,
+               MLIFETiming *timedata, void *privateData );
+
+/* pt-2-pt with vector */
+int MLIFE_ExchangeInitPt2ptVector( MLIFEPatchDesc *patch,
+                   int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeEndPt2ptVector( void *privateData );
+int MLIFE_ExchangePt2ptVector( MLIFEPatchDesc *patch, int **matrix,
+               MLIFETiming *timedata, void *privateData );
 
 /* RMA with Fence */
-int MLIFE_ExchangeInitFence( MLIFEPatchDesc *patch, 
-			     int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeInitFence( MLIFEPatchDesc *patch,
+                 int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndFence( void *privateData );
-int MLIFE_ExchangeFence( MLIFEPatchDesc *patch, int **matrix, 
-			 MLIFETiming *timedata, void *privateData );
+int MLIFE_ExchangeFence( MLIFEPatchDesc *patch, int **matrix,
+             MLIFETiming *timedata, void *privateData );
 
 /* Pt-2-pt, for 9 point stencil, without the diagonal trick */
-int MLIFE_ExchangeInitPt2pt9( MLIFEPatchDesc *patch, 
-			      int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeInitPt2pt9( MLIFEPatchDesc *patch,
+                  int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndPt2pt9( void *privateData );
-int MLIFE_ExchangePt2pt9( MLIFEPatchDesc *patch, int **matrix, 
-			  MLIFETiming *timedata, void *privateData );
+int MLIFE_ExchangePt2pt9( MLIFEPatchDesc *patch, int **matrix,
+              MLIFETiming *timedata, void *privateData );
 
 #ifdef HAVE_EXAMPLE
 /* Pt-2-pt, for 9 point stencil, without the diagonal trick */
 int MLIFE_ExchangeInitExample( MLIFEPatchDesc *patch,
-			      int **m1, int **m2, void *privateData );
+                  int **m1, int **m2, void *privateData );
 int MLIFE_ExchangeEndExample( void *privateData );
 int MLIFE_ExchangeExample( MLIFEPatchDesc *patch, int **matrix,
-			  MLIFETiming *timedata, void *privateData );
+              MLIFETiming *timedata, void *privateData );
 #endif
 
 #define BORN 1
