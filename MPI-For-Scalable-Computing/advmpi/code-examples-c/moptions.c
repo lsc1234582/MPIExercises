@@ -35,16 +35,16 @@ int MLIFE_ParseArgs(int argc, char **argv, MLIFEOptions *options)
     MPI_Type_commit( &argsType );
 
     if (rank == 0) {
-	/* Initialize defaults */
-	options->gNI     = -20;
-	options->gNJ     = -20;
-	options->pNI     = 0;
-	options->pNJ     = 0;
-	options->nIter   = 1;
-	options->verbose = 0;
-	options->doIO    = -1;
-	options->restartIter = -1;
-	strncpy( options->prefix, "mlife", sizeof(options->prefix) - 1);
+    /* Initialize defaults */
+    options->gNI     = -20;
+    options->gNJ     = -20;
+    options->pNI     = 0;
+    options->pNJ     = 0;
+    options->nIter   = 1;
+    options->verbose = 0;
+    options->doIO    = -1;
+    options->restartIter = -1;
+    strncpy( options->prefix, "mlife", sizeof(options->prefix) - 1);
 
         while ((ret = getopt(argc, argv, "a:b:x:y:i:p:r:cv")) >= 0)
         {
@@ -55,9 +55,9 @@ int MLIFE_ParseArgs(int argc, char **argv, MLIFEOptions *options)
                 case 'b':
                     options->pNI = atoi(optarg);
                     break;
-	        case 'c':
-		    options->doIO = 1;
-		    break;
+            case 'c':
+            options->doIO = 1;
+            break;
                 case 'x':
                     options->gNJ = atoi(optarg);
                     break;
@@ -69,15 +69,15 @@ int MLIFE_ParseArgs(int argc, char **argv, MLIFEOptions *options)
                     break;
                 case 'r':
                     options->restartIter = atoi(optarg);
-		    break;
+            break;
                 case 'p':
                     strncpy(options->prefix, optarg, sizeof(options->prefix)-1);
                     break;
-	        case 'v':
-		    options->verbose = 1;
-		    break;
+            case 'v':
+            options->verbose = 1;
+            break;
                 default:
-		    fprintf( stderr, "\
+            fprintf( stderr, "\
 \t-a <pj> - Number of processes in x (j) direction\n\
 \t-b <pi> - Number of processes in y (i) direction\n\
 \t-c      - Enable I/O (checkpoint)\n\
@@ -87,20 +87,20 @@ int MLIFE_ParseArgs(int argc, char **argv, MLIFEOptions *options)
 \t-r <i>  - Iteration where restart begins (and read restart file)\n\
 \t-p <pre>- Filename prefix for I/O\n\
 \t-v      - Turn on verbose output" );
-		    MLIFE_Abort( "" );
+            MLIFE_Abort( "" );
                     break;
             }
         }
-	/* Set a consistent set of defaults */
-	if (options->doIO < 0) {
-	    options->doIO = 0;
-	    if (options->gNI < 0 && options->gNJ < 0) {
-		options->gNI = 2048;
-		options->gNJ = 2048;
-	    }
-	}
-	if (options->gNI < 0) options->gNI = - options->gNI;
-	if (options->gNJ < 0) options->gNJ = - options->gNJ;
+    /* Set a consistent set of defaults */
+    if (options->doIO < 0) {
+        options->doIO = 0;
+        if (options->gNI < 0 && options->gNJ < 0) {
+        options->gNI = 2048;
+        options->gNJ = 2048;
+        }
+    }
+    if (options->gNI < 0) options->gNI = - options->gNI;
+    if (options->gNJ < 0) options->gNJ = - options->gNJ;
     }
 
     MPI_Bcast(options, 1, argsType, 0, MPI_COMM_WORLD );

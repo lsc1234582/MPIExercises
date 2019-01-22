@@ -13,7 +13,7 @@
 
 #include "mlife2d.h"
 
-/* 
+/*
 
  */
 int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options, MLIFEPatchDesc *patch )
@@ -30,7 +30,7 @@ int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options, MLIFEPatchDesc *patch )
 
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    
+
     MPI_Dims_create(nprocs, 2, dims);
 
     patch->pNI = dims[0];
@@ -46,22 +46,22 @@ int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options, MLIFEPatchDesc *patch )
     pcol = rank % dims[1];
     patch->patchI = prow;
     patch->patchJ = pcol;
-    
+
     /* Compute the neighbors */
     left = right = up = down = MPI_PROC_NULL;
     ul = ur = ll = lr = MPI_PROC_NULL;
     if (prow > 0) {
         up   = rank - dims[1];
-	if (pcol > 0) ul = up - 1;
-	if (pcol < dims[1] - 1) ur = up + 1;
+    if (pcol > 0) ul = up - 1;
+    if (pcol < dims[1] - 1) ur = up + 1;
     }
     if (pcol > 0) {
         left = rank - 1;
     }
     if (prow < dims[0]-1) {
         down = rank + dims[1];
-	if (pcol > 0) ll = down - 1;
-	if (pcol < dims[1] - 1) lr = down + 1;
+    if (pcol > 0) ll = down - 1;
+    if (pcol < dims[1] - 1) lr = down + 1;
     }
     if (pcol < dims[1]-1) {
         right = rank + 1;
@@ -78,8 +78,8 @@ int MLIFE_PatchCreateProcessMesh( MLIFEOptions *options, MLIFEPatchDesc *patch )
     return 0;
 }
 
-int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options, 
-					  MLIFEPatchDesc *patch )
+int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
+                      MLIFEPatchDesc *patch )
 {
     int dims[2], periods[2], coords[2];
     int up, down, left, right, ul, ur,ll, lr;
@@ -90,7 +90,7 @@ int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
     dims[1] = options->pNJ;
 
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
-    
+
     MPI_Dims_create(nprocs, 2, dims);
 
     patch->pNI = dims[0];
@@ -104,11 +104,11 @@ int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
     periods[0] = periods[1] = 0;
     MPI_Cart_create( MPI_COMM_WORLD, 2, dims, periods, 1, &patch->comm );
 
-    /* The ordering of processes, relative to the rank in the new 
+    /* The ordering of processes, relative to the rank in the new
        communicator, is defined by the MPI standard.  However, there are
        useful convenience functions */
 
-    MPI_Comm_rank( patch->comm, &rank ); 
+    MPI_Comm_rank( patch->comm, &rank );
     MPI_Cart_coords( patch->comm, rank, 2, coords );
     /* compute the cartesian coords of this process; number across
      * rows changing column by 1 changes rank by 1)
@@ -122,18 +122,18 @@ int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
 
     /* For the diagonal processes, we can either:
      1. Use the defined layout to compute them
-     2. Communicate with the neighbors in the coordinate directions, who 
+     2. Communicate with the neighbors in the coordinate directions, who
         know those ranks (e.g., as the up neighbor for the ranks of the up
         neighbors left and right neighbors).
     */
     ul = ur = ll = lr = MPI_PROC_NULL;
     if (up != MPI_PROC_NULL) {
-	if (left != MPI_PROC_NULL) ul = up - 1;
-	if (right != MPI_PROC_NULL) ur = up + 1;
+    if (left != MPI_PROC_NULL) ul = up - 1;
+    if (right != MPI_PROC_NULL) ur = up + 1;
     }
     if (down != MPI_PROC_NULL) {
-	if (left != MPI_PROC_NULL) ll = down - 1;
-	if (right != MPI_PROC_NULL) lr = down + 1;
+    if (left != MPI_PROC_NULL) ll = down - 1;
+    if (right != MPI_PROC_NULL) lr = down + 1;
     }
 
     patch->left  = left;
@@ -148,9 +148,9 @@ int MLIFE_PatchCreateProcessMeshWithCart( MLIFEOptions *options,
     return 0;
 }
 
-int MLIFE_PatchCreateDataMeshDesc( MLIFEOptions *options, 
-				   MLIFEPatchDesc *patch )
-{    
+int MLIFE_PatchCreateDataMeshDesc( MLIFEOptions *options,
+                   MLIFEPatchDesc *patch )
+{
     int firstcol, firstrow, lastcol, lastrow;
 
     /* compute the decomposition of the global mesh.
@@ -176,15 +176,15 @@ int MLIFE_PatchCreateDataMeshDesc( MLIFEOptions *options,
     patch->gJ  = firstcol;
     patch->lni = lastrow - firstrow + 1;
     patch->lnj = lastcol - firstcol + 1;
-    
+
     return 0;
 }
 
-/* Allocate a C-style 2-D array (array of pointers);  allocate 
-   local mesh with ghost cells and as a contiguous block so that 
-   strided access may be used for the left/right edges 
+/* Allocate a C-style 2-D array (array of pointers);  allocate
+   local mesh with ghost cells and as a contiguous block so that
+   strided access may be used for the left/right edges
 
-   For simplicity, all patches have halo cells on all sides, even 
+   For simplicity, all patches have halo cells on all sides, even
    if the process shares a physical boundary.
 */
 int MLIFE_AllocateLocalMesh( MLIFEPatchDesc *patch, int ***m1, int ***m2 )
@@ -196,7 +196,7 @@ int MLIFE_AllocateLocalMesh( MLIFEPatchDesc *patch, int ***m1, int ***m2 )
     mat[0] = (int *)malloc( (patch->lni+2)*(patch->lnj+2)*sizeof(int) );
     if (!mat[0]) MLIFE_Abort( "Unable to allocate mat[0]" );
     for (i=1; i<patch->lni+2; i++) {
-	mat[i] = mat[i-1] + patch->lnj+2;
+    mat[i] = mat[i-1] + patch->lnj+2;
     }
     *m1 = mat;
 
@@ -205,7 +205,7 @@ int MLIFE_AllocateLocalMesh( MLIFEPatchDesc *patch, int ***m1, int ***m2 )
     mat[0] = (int *)malloc( (patch->lni+2)*(patch->lnj+2)*sizeof(int) );
     if (!mat[0]) MLIFE_Abort( "Unable to allocate mat[0]" );
     for (i=1; i<patch->lni+2; i++) {
-	mat[i] = mat[i-1] + patch->lnj+2;
+    mat[i] = mat[i-1] + patch->lnj+2;
     }
     *m2 = mat;
 
@@ -236,21 +236,21 @@ int MLIFE_InitLocalMesh( MLIFEPatchDesc *patch, int **m1, int **m2 )
 
     /* Initialize the life matrix */
     for (i = 1; i <= lni; i++)  {
-	/* Seed is determined by the row */
+    /* Seed is determined by the row */
         srand48((long)(1000^(i + patch->gI-1)));
-	//printf( "Row %d:", i + patch->gI-1 );
+    //printf( "Row %d:", i + patch->gI-1 );
         /* advance to the random number generator to the
-	 * first *owned* cell in this row
-	 */
-        for (j=1; j < patch->gJ; j++) {    
+     * first *owned* cell in this row
+     */
+        for (j=1; j < patch->gJ; j++) {
             (void)drand48();
         }
 
         for (j=1; j <= lnj; j++) {
             if (drand48() > 0.5) { m1[i][j] = BORN; /*printf("%d ",j);*/}
             else                 m1[i][j] = DIES;
-	}
-	//printf( "\n" );
+    }
+    //printf( "\n" );
     }
 
     return 0;

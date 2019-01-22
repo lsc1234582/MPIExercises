@@ -23,7 +23,7 @@ static void MLIFEIO_msleep(int msec);
 
 static MPI_Comm mlifeio_comm = MPI_COMM_NULL;
 
-
+
 int MLIFEIO_Init(MPI_Comm comm)
 {
     int err;
@@ -44,7 +44,7 @@ int MLIFEIO_Finalize(void)
     return err;
 }
 
-
+
 #define MAX_SIZE 256
 int MLIFEIO_Checkpoint(MLIFEPatchDesc *patch, int **matrix,
                        int iter, MPI_Info info)
@@ -60,11 +60,11 @@ int MLIFEIO_Checkpoint(MLIFEPatchDesc *patch, int **matrix,
      */
     MPI_Allreduce(&patch->lnj, &maxcols, 1, MPI_INT, MPI_MAX, mlifeio_comm);
     if (maxcols + 2 > MAX_SIZE || patch->gNJ > MAX_SIZE) {
-	if (rank == 0) {
-	    fprintf(stderr, "Maximum width(y) exceeded for stdout output.  Max is %d, this run has a max of %d\n",
-		    MAX_SIZE, patch->gNJ );
-	}
-	MPI_Abort(MPI_COMM_WORLD, 1);
+    if (rank == 0) {
+        fprintf(stderr, "Maximum width(y) exceeded for stdout output.  Max is %d, this run has a max of %d\n",
+            MAX_SIZE, patch->gNJ );
+    }
+    MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     /* To ensure that there are no errors in updating the display,
@@ -75,58 +75,58 @@ int MLIFEIO_Checkpoint(MLIFEPatchDesc *patch, int **matrix,
        tag for the row).
     */
     if (rank == 0) {
-	char cbuf[MAX_SIZE];
-	int  buf[MAX_SIZE];
-	int  np, row, i;
-	int  npcols = patch->pNJ;
+    char cbuf[MAX_SIZE];
+    int  buf[MAX_SIZE];
+    int  np, row, i;
+    int  npcols = patch->pNJ;
 
         printf("[H[2J# Iteration %d\n", iter );
-	for (row=1; row <= patch->gNI; row++) {
-	    /* Clear the cbuf */
-	    for (i=0; i<patch->gNJ; i++) {
-		cbuf[i] = ' ';
-	    }
-	    /* We know how many processes there are in each row */
-	    np = 0;
-	    /* Does this process contribute to this row? */
-	    if (row >= patch->gI && row < patch->gI + patch->lni) {
-		for (i=0; i<patch->lnj; i++) {
-		    cbuf[i+patch->gJ-1] =
-			matrix[row-patch->gI+1][i+1] ? '*' : ' ';
-		}
-		np ++;
-	    }
-	    while (np < npcols) {
-		MPI_Recv( buf, MAX_SIZE, MPI_INT, MPI_ANY_SOURCE, row,
-			  mlifeio_comm, MPI_STATUS_IGNORE );
-		/* For each entry in buf that is set, set the
-		   corresponding element in cbuf.  buf[0] is the
-		   first col index, buf[1] is the number of elements */
-		for (i=0; i<buf[1]; i++) {
-		    cbuf[buf[0]-1+i] = buf[i+2] ? '*' : ' ';
-		}
-		np ++;
-	    }
-	    cbuf[patch->gNJ] = 0;
-	    /* The odd characters are commands to an xterm/vt100 window */
-	    printf("[%03d;%03dH%3d: %s", row+1, 1, row, cbuf );
-	}
-	/* The odd characters are commands to an xterm/vt100 window */
+    for (row=1; row <= patch->gNI; row++) {
+        /* Clear the cbuf */
+        for (i=0; i<patch->gNJ; i++) {
+        cbuf[i] = ' ';
+        }
+        /* We know how many processes there are in each row */
+        np = 0;
+        /* Does this process contribute to this row? */
+        if (row >= patch->gI && row < patch->gI + patch->lni) {
+        for (i=0; i<patch->lnj; i++) {
+            cbuf[i+patch->gJ-1] =
+            matrix[row-patch->gI+1][i+1] ? '*' : ' ';
+        }
+        np ++;
+        }
+        while (np < npcols) {
+        MPI_Recv( buf, MAX_SIZE, MPI_INT, MPI_ANY_SOURCE, row,
+              mlifeio_comm, MPI_STATUS_IGNORE );
+        /* For each entry in buf that is set, set the
+           corresponding element in cbuf.  buf[0] is the
+           first col index, buf[1] is the number of elements */
+        for (i=0; i<buf[1]; i++) {
+            cbuf[buf[0]-1+i] = buf[i+2] ? '*' : ' ';
+        }
+        np ++;
+        }
+        cbuf[patch->gNJ] = 0;
+        /* The odd characters are commands to an xterm/vt100 window */
+        printf("[%03d;%03dH%3d: %s", row+1, 1, row, cbuf );
+    }
+    /* The odd characters are commands to an xterm/vt100 window */
         printf("[%03d;%03dH", patch->gNJ+2, 1);
         fflush(stdout);
     }
     else {
-	int buf[MAX_SIZE], i, j, row;
+    int buf[MAX_SIZE], i, j, row;
 
-	buf[0] = patch->gJ;
-	buf[1] = patch->lnj;
-	for (i=1; i <= patch->lni; i++) {
-	    row = i + patch->gI - 1;
-	    for (j=0; j<patch->lnj; j++) {
-		buf[2+j] = matrix[i][j+1];
-	    }
-	    MPI_Send( buf, patch->lnj + 2, MPI_INT, 0, row, mlifeio_comm );
-	}
+    buf[0] = patch->gJ;
+    buf[1] = patch->lnj;
+    for (i=1; i <= patch->lni; i++) {
+        row = i + patch->gI - 1;
+        for (j=0; j<patch->lnj; j++) {
+        buf[2+j] = matrix[i][j+1];
+        }
+        MPI_Send( buf, patch->lnj + 2, MPI_INT, 0, row, mlifeio_comm );
+    }
     }
 
     MLIFEIO_msleep(250); /* give time to see the results */
@@ -144,7 +144,7 @@ int MLIFEIO_Can_restart(void)
     return 0;
 }
 
-
+
 #ifdef HAVE_NANOSLEEP
 #include <time.h>
 static void MLIFEIO_msleep(int msec)

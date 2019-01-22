@@ -22,7 +22,7 @@ typedef struct mem_win {
 static mem_win mem_win_map[2];
 
 int MLIFE_ExchangeInitFence( MLIFEPatchDesc *patch, 
-			     int **m1, int **m2, void *privateData )
+                 int **m1, int **m2, void *privateData )
 {
     int      err=MPI_SUCCESS;
     int      tmp_GFirstRow, tmp_GFirstCol;
@@ -63,29 +63,29 @@ int MLIFE_ExchangeInitFence( MLIFEPatchDesc *patch,
     if (patch->up == MPI_PROC_NULL)
         above_LRows = 0;
     else {
-	MPI_Recv( &above_LRows, 1, MPI_INT, patch->up, 0, patch->comm, 
-		  MPI_STATUS_IGNORE );
+    MPI_Recv( &above_LRows, 1, MPI_INT, patch->up, 0, patch->comm, 
+          MPI_STATUS_IGNORE );
     }
     if (patch->down != MPI_PROC_NULL) {
-	MPI_Send( &patch->lni, 1, MPI_INT, patch->down, 0, patch->comm );
+    MPI_Send( &patch->lni, 1, MPI_INT, patch->down, 0, patch->comm );
     }
 
     if (patch->left == MPI_PROC_NULL)
         left_LCols = 0;
     else {
-	MPI_Recv( &left_LCols, 1, MPI_INT, patch->left, 0, patch->comm,
-		  MPI_STATUS_IGNORE );
-	MPI_Send( &patch->lnj, 1, MPI_INT, patch->left, 0, patch->comm );
+    MPI_Recv( &left_LCols, 1, MPI_INT, patch->left, 0, patch->comm,
+          MPI_STATUS_IGNORE );
+    MPI_Send( &patch->lnj, 1, MPI_INT, patch->left, 0, patch->comm );
     }
 
     if (patch->right == MPI_PROC_NULL)
         right_LCols = 0;
     else {
-	/* This send matches the recv from the left, above */
-	MPI_Send( &patch->lnj, 1, MPI_INT, patch->right, 0, patch->comm );
-	/* This recv matche the send from the left, above */
-	MPI_Recv( &right_LCols, 1, MPI_INT, patch->right, 0, patch->comm,
-		  MPI_STATUS_IGNORE );
+    /* This send matches the recv from the left, above */
+    MPI_Send( &patch->lnj, 1, MPI_INT, patch->right, 0, patch->comm );
+    /* This recv matche the send from the left, above */
+    MPI_Recv( &right_LCols, 1, MPI_INT, patch->right, 0, patch->comm,
+          MPI_STATUS_IGNORE );
     }
 
     return err;
@@ -99,7 +99,7 @@ int MLIFE_ExchangeEndFence(void *privateData)
 }
        /* SLIDE: 2D Life Code Walkthrough */
 int MLIFE_ExchangeFence( MLIFEPatchDesc *patch, int **matrix,
-			 MLIFETiming *timedata, void *privateData )
+             MLIFETiming *timedata, void *privateData )
 {
     int err=MPI_SUCCESS;
     MPI_Aint disp;
@@ -119,15 +119,15 @@ int MLIFE_ExchangeFence( MLIFEPatchDesc *patch, int **matrix,
 
     /* create datatype if not already created */
     if (mytype == MPI_DATATYPE_NULL) {
-	MPI_Type_vector(LRows, 1, LCols+2, MPI_INT, &mytype);
+    MPI_Type_vector(LRows, 1, LCols+2, MPI_INT, &mytype);
         MPI_Type_commit(&mytype);
     }
     if (left_type == MPI_DATATYPE_NULL) {
-	MPI_Type_vector(LRows, 1, left_LCols+2, MPI_INT, &left_type);
+    MPI_Type_vector(LRows, 1, left_LCols+2, MPI_INT, &left_type);
         MPI_Type_commit(&left_type);
     }
     if (right_type == MPI_DATATYPE_NULL) {
-	MPI_Type_vector(LRows, 1, right_LCols+2, MPI_INT,
+    MPI_Type_vector(LRows, 1, right_LCols+2, MPI_INT,
                         &right_type);
         MPI_Type_commit(&right_type);
     }
@@ -139,7 +139,7 @@ int MLIFE_ExchangeFence( MLIFEPatchDesc *patch, int **matrix,
 
     disp = (left_LCols + 2) + (left_LCols + 1);
     MPI_Put(&matrix[1][1], 1, mytype, patch->left, disp, 1, 
-	    left_type, win);
+        left_type, win);
 
     disp = right_LCols + 2;
     MPI_Put(&matrix[1][LCols], 1, mytype, patch->right, disp, 1, 
