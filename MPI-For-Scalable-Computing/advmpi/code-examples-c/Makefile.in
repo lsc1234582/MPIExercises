@@ -15,7 +15,7 @@ CPPFLAGS = @DEFS@
 CFLAGS = @CFLAGS@
 
 MLIFEOBJS = mlife2d.o patch.o moptions.o mlife2d-io-stdout1.o mtiming.o \
-	mlife2d-pt2pt.o mlife2d-pt2ptsnd.o mlife2d-pt2ptuv.o mlife2d-fence.o \
+	mlife2d-pt2pt.o mlife2d-pt2ptsnd.o mlife2d-pt2ptuv.o mlife2d-pt2ptvector.o mlife2d-pt2ptresized.o mlife2d-fence.o \
 	mlife2d-pt2pt9.o
 
 .c.o:	$?

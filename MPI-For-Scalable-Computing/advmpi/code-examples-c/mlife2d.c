@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     int            rank, provided;
     MLIFEPatchDesc patch;
     MLIFEOptions   options;
-    MLIFETiming    timedataPt2pt, timedataPt2ptSnd, timedataPt2ptUv, timedataPt2ptVector,
+    MLIFETiming    timedataPt2pt, timedataPt2ptSnd, timedataPt2ptUv, timedataPt2ptVector, timedataPt2ptResized,
     timedataFence, timedataPt2pt9;
 #ifdef HAVE_EXAMPLE
     MLIFETiming    timedataExample;
@@ -103,6 +103,11 @@ int main(int argc, char *argv[])
                   MLIFE_ExchangeEndPt2ptVector,
                   &timedataPt2ptVector );
         MLIFE_TimeIterations( &patch, options.nIter, doCheckpoint, m1, m2,
+                  MLIFE_ExchangeInitPt2ptResized,
+                  MLIFE_ExchangePt2ptResized,
+                  MLIFE_ExchangeEndPt2ptResized,
+                  &timedataPt2ptResized );
+        MLIFE_TimeIterations( &patch, options.nIter, doCheckpoint, m1, m2,
                   MLIFE_ExchangeInitFence,
                   MLIFE_ExchangeFence,
                   MLIFE_ExchangeEndFence,
@@ -139,6 +144,9 @@ int main(int argc, char *argv[])
         printf( "[%d] Pt2ptVector: \t%e\t%e\n", rank,
             timedataPt2ptVector.itertime,
             timedataPt2ptVector.exchtime );
+        printf( "[%d] Pt2ptResized: \t%e\t%e\n", rank,
+            timedataPt2ptResized.itertime,
+            timedataPt2ptResized.exchtime );
         printf( "[%d] Fence: \t\t%e\t%e\n", rank,
             timedataFence.itertime,
             timedataFence.exchtime );

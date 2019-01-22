@@ -97,6 +97,13 @@ int MLIFE_ExchangeEndPt2ptVector( void *privateData );
 int MLIFE_ExchangePt2ptVector( MLIFEPatchDesc *patch, int **matrix,
                MLIFETiming *timedata, void *privateData );
 
+/* pt-2-pt with resized */
+int MLIFE_ExchangeInitPt2ptResized( MLIFEPatchDesc *patch,
+                   int **m1, int **m2, void *privateData );
+int MLIFE_ExchangeEndPt2ptResized( void *privateData );
+int MLIFE_ExchangePt2ptResized( MLIFEPatchDesc *patch, int **matrix,
+               MLIFETiming *timedata, void *privateData );
+
 /* RMA with Fence */
 int MLIFE_ExchangeInitFence( MLIFEPatchDesc *patch,
                  int **m1, int **m2, void *privateData );
