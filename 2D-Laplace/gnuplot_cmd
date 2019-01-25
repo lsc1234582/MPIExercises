@@ -1,0 +1,5 @@
+set pm3d
+unset surface
+set view map
+set size square
+unset key
