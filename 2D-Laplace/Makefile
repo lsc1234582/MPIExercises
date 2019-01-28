@@ -3,10 +3,12 @@ CFLAGS=-Wall -g -O3
 LDLIBS=-lm
 
 .PHONY: all
-all: InitCondition
+all: InitCondition Solver
 
-InitCondition: InitCondition.c
+InitCondition: InitCondition.c Utils.h
+
+Solver: Solver.c Utils.h
 
 .PHONY: clean
 clean:
-	rm -f *.o InitCondition
+	rm -f *.o InitCondition Solver

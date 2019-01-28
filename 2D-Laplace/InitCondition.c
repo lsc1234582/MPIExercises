@@ -1,6 +1,9 @@
+#include "Utils.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 /* Analytical solutions
  * A series of functions that satisfy Laplace's equation
  */
@@ -31,43 +34,100 @@ static double (*const funcs[])(double, double) =
     func2,
     func3
 };
-#define X_MIN -1.0
-#define X_MAX 1.0
-#define Y_MIN -1.0
-#define Y_MAX 1.0
-#define NX 64
-#define NY 64
-#define FUNC_NUM 2
+
+void PrintHelp(void)
+{
+    printf("Usage: InitCondition <ParamsFile> <FunctionSelection>\n\
+            <FunctionSelect>: [0..3]\n");
+}
 
 int main(int argc, char**argv)
 {
-    /* Args
-     * ./InitCondition nx ny function_selection
-     */
-    double dx = (X_MAX - X_MIN) / (NX - 1);
-    double dy = (Y_MAX - Y_MIN) / (NY - 1);
-    double x = X_MIN;
-    FILE* fptr;
-    if ((fptr = fopen("initial.dat", "w")) == NULL)
+    /* Parse args */
+    printf("Info: Parsing args\n");
+    if (argc != 3)
     {
+        PrintHelp();
         exit(1);
     }
-    double (*func)(double, double) = funcs[FUNC_NUM];
-
-    for (size_t i = 0; i < NX; ++i)
+    char paramsFileName[128];
+    if(strlen(argv[1]) > 128)
     {
-        double y = Y_MIN;
-        for (size_t j = 0; j < NX; ++j)
+        printf("Error: Parameter file name too long\n");
+        exit(1);
+    }
+    strncpy(paramsFileName, argv[1], strlen(argv[1]));
+    char* endChr;
+    int funcSelection = strtol(argv[2], &endChr, 10);
+    if (endChr == argv[2] || funcSelection > 3 || funcSelection < 0)
+    {
+        PrintHelp();
+        exit(1);
+    }
+
+    Params params;
+    if (ParseParameterFile(paramsFileName, &params))
+    {
+        printf("Error: Error in reading parameter file: %s\n", paramsFileName);
+        exit(1);
+    }
+    printf("Info: Parameters:\n");
+    PrintParameters(&params);
+    printf("Info: Function selection: %d\n", funcSelection);
+
+    const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);
+    const double dy = (params.m_YMax - params.m_YMin) / (params.m_NCol - 1);
+
+    FILE* fptrInit;
+    FILE* fptrSol;
+    if ((fptrInit = fopen("initial.dat", "w")) == NULL)
+    {
+        printf("Error: Cannot open initial.dat for writing\n");
+        exit(1);
+    }
+
+    if ((fptrSol = fopen("solution.dat", "w")) == NULL)
+    {
+        printf("Error: Cannot open solution.dat for writing\n");
+        exit(1);
+    }
+    double (*func)(double, double) = funcs[funcSelection];
+
+    printf("Info: Writing initial bounadry values and analytical solutions to initial.dat and solutions.dat\n");
+    /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
+     * 'solution.dat')) */
+    double x = params.m_XMin;
+    double y = params.m_YMin;
+    for (size_t i = 0; i < params.m_NRow; ++i)
+    {
+        y = params.m_YMin;
+        for (size_t j = 0; j < params.m_NCol; ++j)
         {
-            fprintf(fptr, "%f %f %f\n", x, y, func(x, y));
+            if (i > 0 && i < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
+            {
+                fprintf(fptrInit, "%f %f %f\n", x, y, 0.0);
+            }
+            else
+            {
+                fprintf(fptrInit, "%f %f %f\n", x, y, func(x, y));
+            }
+            fprintf(fptrSol, "%f %f %f\n", x, y, func(x, y));
             y += dy;
         }
-        fprintf(fptr, "\n");
+        fprintf(fptrInit, "\n");
+        fprintf(fptrSol, "\n");
         x += dx;
     }
 
-    if(fclose(fptr))
+    if(fclose(fptrInit))
     {
+        printf("Error: Cannot close initial.dat\n");
         exit(1);
     }
+    if(fclose(fptrSol))
+    {
+        printf("Error: Cannot close solution.dat\n");
+        exit(1);
+    }
+    printf("Info: Exiting\n");
 }
