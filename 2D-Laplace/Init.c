@@ -37,7 +37,7 @@ static double (*const funcs[])(double, double) =
 
 void PrintHelp(void)
 {
-    printf("Usage: InitCondition <ParamsFile> <FunctionSelection>\n\
+    printf("Usage: Init <ParamsFile> <FunctionSelection>\n\
             <FunctionSelect>: [0..3]\n");
 }
 
@@ -78,24 +78,23 @@ int main(int argc, char**argv)
     const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);
     const double dy = (params.m_YMax - params.m_YMin) / (params.m_NCol - 1);
 
-    FILE* fptrInit;
-    FILE* fptrSol;
-    if ((fptrInit = fopen("initial.dat", "w")) == NULL)
-    {
-        printf("Error: Cannot open initial.dat for writing\n");
-        exit(1);
-    }
-
-    if ((fptrSol = fopen("solution.dat", "w")) == NULL)
-    {
-        printf("Error: Cannot open solution.dat for writing\n");
-        exit(1);
-    }
     double (*func)(double, double) = funcs[funcSelection];
 
-    printf("Info: Writing initial bounadry values and analytical solutions to initial.dat and solutions.dat\n");
+    printf("Info: Writing initial bounadry values and analytical solutions to initial.dat and solution.dat\n");
     /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
      * 'solution.dat')) */
+    double** gridInit = AllocateInitGrid(params.m_NRow, params.m_NCol);
+    if (gridInit == NULL)
+    {
+        printf("Error: Error in allocating grid\n");
+        exit(1);
+    }
+    double** gridSol = AllocateInitGrid(params.m_NRow, params.m_NCol);
+    if (gridSol == NULL)
+    {
+        printf("Error: Error in allocating grid\n");
+        exit(1);
+    }
     double x = params.m_XMin;
     double y = params.m_YMin;
     for (size_t i = 0; i < params.m_NRow; ++i)
@@ -103,31 +102,30 @@ int main(int argc, char**argv)
         y = params.m_YMin;
         for (size_t j = 0; j < params.m_NCol; ++j)
         {
+            gridSol[i][j] = func(x, y);
             if (i > 0 && i < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
             {
-                fprintf(fptrInit, "%f %f %f\n", x, y, 0.0);
+                gridInit[i][j] = 0.0;
             }
             else
             {
-                fprintf(fptrInit, "%f %f %f\n", x, y, func(x, y));
+                gridInit[i][j] = gridSol[i][j];
             }
-            fprintf(fptrSol, "%f %f %f\n", x, y, func(x, y));
             y += dy;
         }
-        fprintf(fptrInit, "\n");
-        fprintf(fptrSol, "\n");
         x += dx;
     }
 
-    if(fclose(fptrInit))
+    if (WriteGrid("initial.dat", &params, gridInit))
     {
-        printf("Error: Cannot close initial.dat\n");
         exit(1);
     }
-    if(fclose(fptrSol))
+    if (WriteGrid("solution.dat", &params, gridSol))
     {
-        printf("Error: Cannot close solution.dat\n");
         exit(1);
     }
+    /* Clean up */
+    FreeGrid(params.m_NRow, gridInit);
+    FreeGrid(params.m_NRow, gridSol);
     printf("Info: Exiting\n");
 }

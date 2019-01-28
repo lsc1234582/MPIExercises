@@ -1,14 +1,15 @@
 CC=mpicc
 CFLAGS=-Wall -g -O3
 LDLIBS=-lm
+ALL=Init Solve
 
 .PHONY: all
-all: InitCondition Solver
+all: ${ALL}
 
-InitCondition: InitCondition.c Utils.h
+Init: Init.o Utils.o 
 
-Solver: Solver.c Utils.h
+Solve: Solve.o SerialSolver.o Utils.o  
 
 .PHONY: clean
 clean:
-	rm -f *.o InitCondition Solver
+	rm -f *.o ${ALL}
