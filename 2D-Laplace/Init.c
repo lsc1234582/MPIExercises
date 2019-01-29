@@ -1,39 +1,8 @@
 #include "Utils.h"
 
-#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-/* Analytical solutions
- * A series of functions that satisfy Laplace's equation
- */
-double func0(double x, double y)
-{
-    return 1.0;
-}
-
-double func1(double x, double y)
-{
-    return 2 * x * y;
-}
-
-double func2(double x, double y)
-{
-    return x * x - y * y;
-}
-
-double func3(double x, double y)
-{
-    return pow(x, 4) - 6 * pow(x, 2) * pow(y, 2) + pow(y, 4);
-}
-/* Function map that holds the analytical solutions */
-static double (*const funcs[])(double, double) =
-{
-    func0,
-    func1,
-    func2,
-    func3
-};
 
 void PrintHelp(void)
 {

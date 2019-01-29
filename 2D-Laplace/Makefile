@@ -1,7 +1,7 @@
 CC=mpicc
 CFLAGS=-Wall -g -O3
 LDLIBS=-lm
-ALL=Init Solve
+ALL=Init Solve InitParRow
 
 .PHONY: all
 all: ${ALL}
@@ -9,6 +9,8 @@ all: ${ALL}
 Init: Init.o Utils.o 
 
 Solve: Solve.o SerialSolver.o Utils.o  
+
+InitParRow: InitParRow.o Utils.o
 
 .PHONY: clean
 clean:
