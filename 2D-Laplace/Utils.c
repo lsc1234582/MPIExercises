@@ -1,5 +1,6 @@
 #include "Utils.h"
 
+#include <mpi.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@ int ParseParameterFile(const char fileName[], Params* params)
     FILE* fptr;
     if ((fptr = fopen(fileName, "r")) == NULL)
     {
-        printf("Error: Cannot open parameter file %s for reading\n", fileName);
+        pprintf("Error: Cannot open parameter file %s for reading\n", fileName);
         return 1;
     }
     if(fscanf(fptr, "XMin: %lf\n", &params->m_XMin) < 0)
@@ -45,7 +46,7 @@ int ParseParameterFile(const char fileName[], Params* params)
 
 void PrintParameters(const Params* params)
 {
-    printf("XMin:\t%lf\nXMax:\t%lf\nYMin:\t%lf\nYMax:\t%lf\nNRow:\t%d\nNCol:\t%d\nTolerance:\t%lf\n",
+    pprintf("XMin:\t%lf\nXMax:\t%lf\nYMin:\t%lf\nYMax:\t%lf\nNRow:\t%d\nNCol:\t%d\nTolerance:\t%lf\n",
             params->m_XMin, params->m_XMax, params->m_YMin, params->m_YMax,
             params->m_NRow, params->m_NCol, params->m_Tolerance);
 }
@@ -78,11 +79,11 @@ void FreeGrid(const int nRow, double** grid)
 
 int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2)
 {
-    printf("Info: Parsing grid data from %s\n", fileName);
+    pprintf("Info: Parsing grid data from %s\n", fileName);
     FILE* fptr;
     if ((fptr = fopen(fileName, "r")) == NULL)
     {
-        printf("Error: Cannot open %s for reading\n", fileName);
+        pprintf("Error: Cannot open %s for reading\n", fileName);
         return 1;
     }
     const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
@@ -96,23 +97,23 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
         {
             if(fscanf(fptr, "%*f %*f %lf\n", &grid1[i][j]) < 0)
             {
-                printf("Error: Error in parsing %s\n", fileName);
+                pprintf("Error: Error in parsing %s\n", fileName);
                 exit(1);
             }
             grid2[i][j] = grid1[i][j];
-            //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
+            //pprintf("READ: %f %f %f\n", x, y, grid1[i][j]);
             y += dy;
         }
         if(fscanf(fptr, "\n") < 0)
         {
-            printf("Error: Error in parsing %s\n", fileName);
+            pprintf("Error: Error in parsing %s\n", fileName);
             exit(1);
         }
         x += dx;
     }
     if(fclose(fptr))
     {
-        printf("Error: Cannot close %s\n", fileName);
+        pprintf("Error: Cannot close %s\n", fileName);
         return 1;
     }
 
@@ -121,11 +122,11 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
 
 int WriteGrid(const char fileName[], const Params* params, double** grid)
 {
-    printf("Info: Writing grid data to %s\n", fileName);
+    pprintf("Info: Writing grid data to %s\n", fileName);
     FILE* fptr;
     if ((fptr = fopen(fileName, "w")) == NULL)
     {
-        printf("Error: Cannot open %s for writing\n", fileName);
+        pprintf("Error: Cannot open %s for writing\n", fileName);
         exit(1);
     }
 
@@ -147,8 +148,31 @@ int WriteGrid(const char fileName[], const Params* params, double** grid)
     }
     if(fclose(fptr))
     {
-        printf("Error: Cannot close %s\n", fileName);
+        pprintf("Error: Cannot close %s\n", fileName);
         exit(1);
+    }
+    return 0;
+}
+
+int pprintf(const char* fmt, ...)
+{
+    int initialised;
+    int rank;
+    if (MPI_Initialized(&initialised) || !initialised)
+    {
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+        return 1;
+    }
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0)
+    {
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
     }
     return 0;
 }

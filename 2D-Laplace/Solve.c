@@ -1,6 +1,7 @@
 #include "Utils.h"
 #include "Solvers.h"
 
+#include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,12 +9,13 @@
 
 void PrintHelp(void)
 {
-    printf("Usage: Solve <ParamsFile>\n");
+    pprintf("Usage: Solve <ParamsFile>\n");
 }
 
 int main(int argc, char**argv)
 {
-    printf("Info: Parsing args\n");
+    MPI_Init(&argc, &argv);
+    pprintf("Info: Parsing args\n");
     /* Parse args */
     if (argc != 2)
     {
@@ -23,7 +25,7 @@ int main(int argc, char**argv)
     char paramsFileName[128];
     if(strlen(argv[1]) > 128)
     {
-        printf("Error: Parameter file name too long\n");
+        pprintf("Error: Parameter file name too long\n");
         exit(1);
     }
     strncpy(paramsFileName, argv[1], strlen(argv[1]));
@@ -31,13 +33,14 @@ int main(int argc, char**argv)
 
     if (ParseParameterFile(paramsFileName, &params))
     {
-        printf("Error: Error in reading parameter file: %s\n", paramsFileName);
+        pprintf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
-    printf("Info: Parameters:\n");
+    pprintf("Info: Parameters:\n");
     PrintParameters(&params);
 
     SolveSerial(&params);
 
-    printf("Info: Exiting\n");
+    pprintf("Info: Exiting\n");
+    MPI_Finalize();
 }

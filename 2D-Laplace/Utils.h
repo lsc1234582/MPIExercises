@@ -25,5 +25,6 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
 
 int WriteGrid(const char fileName[], const Params* params, double** grid);
 
+int pprintf(const char* fmt, ...);
 
 #endif
