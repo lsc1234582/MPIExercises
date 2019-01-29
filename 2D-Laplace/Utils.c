@@ -1,9 +1,60 @@
 #include "Utils.h"
 
-#include <mpi.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+
+/* Analytical solutions
+ * A series of functions that satisfy Laplace's equation
+ */
+double func0(double x, double y)
+{
+    return 1.0;
+}
+
+double func1(double x, double y)
+{
+    return 2 * x * y;
+}
+
+double func2(double x, double y)
+{
+    return x * x - y * y;
+}
+
+double func3(double x, double y)
+{
+    return pow(x, 4) - 6 * pow(x, 2) * pow(y, 2) + pow(y, 4);
+}
+
+/* Function map that holds the analytical solutions */
+double (*const funcs[])(double, double) =
+{
+    func0,
+    func1,
+    func2,
+    func3
+};
+
+int CreateParameterMPIStructDataType(MPI_Datatype* newType)
+{
+    const int numFields = 7;
+    int blockLengths[] = {1, 1, 1, 1, 1, 1, 1};
+    MPI_Datatype blockTypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE};
+    MPI_Aint blockDisplacements[numFields];
+    blockDisplacements[0] = offsetof(Params, m_XMin);
+    blockDisplacements[1] = offsetof(Params, m_XMax);
+    blockDisplacements[2] = offsetof(Params, m_YMin);
+    blockDisplacements[3] = offsetof(Params, m_YMax);
+    blockDisplacements[4] = offsetof(Params, m_NRow);
+    blockDisplacements[5] = offsetof(Params, m_NCol);
+    blockDisplacements[6] = offsetof(Params, m_Tolerance);
+    MPI_Type_create_struct(numFields, blockLengths, blockDisplacements, blockTypes, newType);
+    MPI_Type_commit(newType);
+    return 0;
+}
 
 int ParseParameterFile(const char fileName[], Params* params)
 {
@@ -167,7 +218,7 @@ int pprintf(const char* fmt, ...)
         return 1;
     }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0)
+    if (rank == MASTER_RANK)
     {
         va_list args;
         va_start(args, fmt);

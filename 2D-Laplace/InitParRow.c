@@ -1,0 +1,146 @@
+#include "Utils.h"
+
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+typedef struct
+{
+    int m_NRow;
+    int m_PatchI;
+    double m_PatchX; 
+} GridHorPatch;
+
+void AllocateGridHorPatch(const Params* params, GridHorPatch* horPatch)
+{
+    int size;
+    int rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    const int fullRowSize = ceil(params->m_NRow / size);
+    const int partialRowSize = params->m_NRow % size;
+    horPatch->m_NRow = (partialRowSize == 0 || rank < size - 1) ? fullRowSize : partialRowSize;
+    horPatch->m_PatchI = rank * fullRowSize;
+    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    horPatch->m_PatchX = params->m_XMin + horPatch->m_PatchI * dx;
+}
+
+void PrintHelp(void)
+{
+    printf("Usage: Init <ParamsFile> <FunctionSelection>\n\
+            <FunctionSelect>: [0..3]\n");
+}
+
+int main(int argc, char**argv)
+{
+    MPI_Init(&argc, &argv);
+    int size;
+    int rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    /* Parse args */
+    printf("Info: Parsing args\n");
+    if (argc != 3)
+    {
+        PrintHelp();
+        exit(1);
+    }
+    char paramsFileName[128];
+    if(strlen(argv[1]) > 128)
+    {
+        printf("Error: Parameter file name too long\n");
+        exit(1);
+    }
+    strncpy(paramsFileName, argv[1], strlen(argv[1]));
+    char* endChr;
+    int funcSelection = strtol(argv[2], &endChr, 10);
+    if (endChr == argv[2] || funcSelection > 3 || funcSelection < 0)
+    {
+        PrintHelp();
+        exit(1);
+    }
+
+    /* Parse and broadcast parameters */
+    MPI_Datatype ParamsMPIType;
+    CreateParameterMPIStructDataType(&ParamsMPIType);
+    Params params;
+    if (rank == MASTER_RANK)
+    {
+        if (ParseParameterFile(paramsFileName, &params))
+        {
+            printf("Error: Error in reading parameter file: %s\n", paramsFileName);
+            exit(1);
+        }
+        printf("Info: Parameters:\n");
+        PrintParameters(&params);
+        printf("Info: Function selection: %d\n", funcSelection);
+    }
+    MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
+
+    GridHorPatch horPatch;
+    AllocateGridHorPatch(&params, &horPatch);
+
+    const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);
+    const double dy = (params.m_YMax - params.m_YMin) / (params.m_NCol - 1);
+
+    double (*func)(double, double) = funcs[funcSelection];
+
+    printf("Info: Writing initial bounadry values and analytical solutions to initial.MPI_%d.dat and solution.MPI_%d.dat\n",
+            rank, rank);
+    /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
+     * 'solution.dat')) */
+    double** gridInit = AllocateInitGrid(horPatch.m_NRow, params.m_NCol);
+    if (gridInit == NULL)
+    {
+        printf("Error: Error in allocating grid\n");
+        exit(1);
+    }
+    double** gridSol = AllocateInitGrid(horPatch.m_NRow, params.m_NCol);
+    if (gridSol == NULL)
+    {
+        printf("Error: Error in allocating grid\n");
+        exit(1);
+    }
+    double x = horPatch.m_PatchX;
+    double y = params.m_YMin;
+    for (size_t i = 0; i < horPatch.m_NRow; ++i)
+    {
+        int globalI = horPatch.m_PatchI + i;
+        y = params.m_YMin;
+        for (size_t j = 0; j < params.m_NCol; ++j)
+        {
+            gridSol[i][j] = func(x, y);
+            if (globalI > 0 && globalI < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
+            {
+                gridInit[i][j] = 0.0;
+            }
+            else
+            {
+                gridInit[i][j] = gridSol[i][j];
+            }
+            y += dy;
+        }
+        x += dx;
+    }
+
+    char initialDatFileName[128];
+    sprintf(initialDatFileName, "initial.MPI_%d.dat", rank);
+    char solutionDatFileName[128];
+    sprintf(solutionDatFileName, "solution.MPI_%d.dat", rank);
+
+    if (WriteGrid(initialDatFileName, &params, gridInit))
+    {
+        exit(1);
+    }
+    if (WriteGrid(solutionDatFileName, &params, gridSol))
+    {
+        exit(1);
+    }
+    /* Clean up */
+    FreeGrid(params.m_NRow, gridInit);
+    FreeGrid(params.m_NRow, gridSol);
+    printf("Info: Exiting\n");
+    MPI_Finalize();
+}
