@@ -16,6 +16,13 @@ typedef struct
     double m_Tolerance;
 } Params;
 
+
+typedef struct
+{
+    int m_NRow;
+    int m_PatchI;
+    double m_PatchX; 
+} GridHorPatch;
 /* Analytical solutions
  * A series of functions that satisfy Laplace's equation
  */
@@ -41,8 +48,10 @@ double** AllocateInitGrid(const int nRow, const int nCol);
 void FreeGrid(const int nRow, double** grid);
 
 int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2);
+int ReadGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid1, double** grid2);
 
 int WriteGrid(const char fileName[], const Params* params, double** grid);
+int WriteGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid);
 
 int pprintf(const char* fmt, ...);
 

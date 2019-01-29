@@ -130,11 +130,11 @@ void FreeGrid(const int nRow, double** grid)
 
 int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2)
 {
-    pprintf("Info: Parsing grid data from %s\n", fileName);
+    printf("Info: Parsing grid data from %s\n", fileName);
     FILE* fptr;
     if ((fptr = fopen(fileName, "r")) == NULL)
     {
-        pprintf("Error: Cannot open %s for reading\n", fileName);
+        printf("Error: Cannot open %s for reading\n", fileName);
         return 1;
     }
     const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
@@ -148,23 +148,66 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
         {
             if(fscanf(fptr, "%*f %*f %lf\n", &grid1[i][j]) < 0)
             {
-                pprintf("Error: Error in parsing %s\n", fileName);
+                printf("Error: Error in parsing %s\n", fileName);
                 exit(1);
             }
             grid2[i][j] = grid1[i][j];
-            //pprintf("READ: %f %f %f\n", x, y, grid1[i][j]);
+            //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
             y += dy;
         }
         if(fscanf(fptr, "\n") < 0)
         {
-            pprintf("Error: Error in parsing %s\n", fileName);
+            printf("Error: Error in parsing %s\n", fileName);
             exit(1);
         }
         x += dx;
     }
     if(fclose(fptr))
     {
-        pprintf("Error: Cannot close %s\n", fileName);
+        printf("Error: Cannot close %s\n", fileName);
+        return 1;
+    }
+
+    return 0;
+}
+
+int ReadGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid1, double** grid2)
+{
+    printf("Info: Parsing grid data from %s\n", fileName);
+    FILE* fptr;
+    if ((fptr = fopen(fileName, "r")) == NULL)
+    {
+        printf("Error: Cannot open %s for reading\n", fileName);
+        return 1;
+    }
+    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    const double dy = (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    double x = horPatch->m_PatchX;
+    double y = params->m_YMin;
+    for (size_t i = 0; i < horPatch->m_NRow; ++i)
+    {
+        y = params->m_YMin;
+        for (size_t j = 0; j < params->m_NCol; ++j)
+        {
+            if(fscanf(fptr, "%*f %*f %lf\n", &grid1[i][j]) < 0)
+            {
+                printf("Error: Error in parsing %s\n", fileName);
+                exit(1);
+            }
+            grid2[i][j] = grid1[i][j];
+            //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
+            y += dy;
+        }
+        if(fscanf(fptr, "\n") < 0)
+        {
+            printf("Error: Error in parsing %s\n", fileName);
+            exit(1);
+        }
+        x += dx;
+    }
+    if(fclose(fptr))
+    {
+        printf("Error: Cannot close %s\n", fileName);
         return 1;
     }
 
@@ -173,11 +216,11 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
 
 int WriteGrid(const char fileName[], const Params* params, double** grid)
 {
-    pprintf("Info: Writing grid data to %s\n", fileName);
+    printf("Info: Writing grid data to %s\n", fileName);
     FILE* fptr;
     if ((fptr = fopen(fileName, "w")) == NULL)
     {
-        pprintf("Error: Cannot open %s for writing\n", fileName);
+        printf("Error: Cannot open %s for writing\n", fileName);
         exit(1);
     }
 
@@ -199,7 +242,41 @@ int WriteGrid(const char fileName[], const Params* params, double** grid)
     }
     if(fclose(fptr))
     {
-        pprintf("Error: Cannot close %s\n", fileName);
+        printf("Error: Cannot close %s\n", fileName);
+        exit(1);
+    }
+    return 0;
+}
+
+int WriteGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid)
+{
+    printf("Info: Writing grid data to %s\n", fileName);
+    FILE* fptr;
+    if ((fptr = fopen(fileName, "w")) == NULL)
+    {
+        printf("Error: Cannot open %s for writing\n", fileName);
+        exit(1);
+    }
+
+    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    const double dy = (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    double x = horPatch->m_PatchX;
+    double y = params->m_YMin;
+    x = horPatch->m_PatchX;
+    for (size_t i = 0; i < horPatch->m_NRow; ++i)
+    {
+        y = params->m_YMin;
+        for (size_t j = 0; j < params->m_NCol; ++j)
+        {
+            fprintf(fptr, "%f %f %f\n", x, y, grid[i][j]);
+            y += dy;
+        }
+        fprintf(fptr, "\n");
+        x += dx;
+    }
+    if(fclose(fptr))
+    {
+        printf("Error: Cannot close %s\n", fileName);
         exit(1);
     }
     return 0;

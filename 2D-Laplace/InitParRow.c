@@ -6,13 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct
-{
-    int m_NRow;
-    int m_PatchI;
-    double m_PatchX; 
-} GridHorPatch;
-
 void AllocateGridHorPatch(const Params* params, GridHorPatch* horPatch)
 {
     int size;
@@ -35,39 +28,39 @@ void PrintHelp(void)
 
 int main(int argc, char**argv)
 {
-    MPI_Init(&argc, &argv);
     int size;
     int rank;
+    int funcSelection;
+    MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    /* Parse args */
-    printf("Info: Parsing args\n");
-    if (argc != 3)
-    {
-        PrintHelp();
-        exit(1);
-    }
-    char paramsFileName[128];
-    if(strlen(argv[1]) > 128)
-    {
-        printf("Error: Parameter file name too long\n");
-        exit(1);
-    }
-    strncpy(paramsFileName, argv[1], strlen(argv[1]));
-    char* endChr;
-    int funcSelection = strtol(argv[2], &endChr, 10);
-    if (endChr == argv[2] || funcSelection > 3 || funcSelection < 0)
-    {
-        PrintHelp();
-        exit(1);
-    }
-
-    /* Parse and broadcast parameters */
     MPI_Datatype ParamsMPIType;
     CreateParameterMPIStructDataType(&ParamsMPIType);
     Params params;
+    /* Parse args */
     if (rank == MASTER_RANK)
     {
+        printf("Info: Parsing args\n");
+        if (argc != 3)
+        {
+            PrintHelp();
+            exit(1);
+        }
+        char paramsFileName[128];
+        if(strlen(argv[1]) > 128)
+        {
+            printf("Error: Parameter file name too long\n");
+            exit(1);
+        }
+        strncpy(paramsFileName, argv[1], strlen(argv[1]));
+        char* endChr;
+        funcSelection = strtol(argv[2], &endChr, 10);
+        if (endChr == argv[2] || funcSelection > 3 || funcSelection < 0)
+        {
+            PrintHelp();
+            exit(1);
+        }
+        /* Parse and broadcast parameters */
         if (ParseParameterFile(paramsFileName, &params))
         {
             printf("Error: Error in reading parameter file: %s\n", paramsFileName);
@@ -78,6 +71,7 @@ int main(int argc, char**argv)
         printf("Info: Function selection: %d\n", funcSelection);
     }
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
+    MPI_Bcast(&funcSelection, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
 
     GridHorPatch horPatch;
     AllocateGridHorPatch(&params, &horPatch);
@@ -130,17 +124,17 @@ int main(int argc, char**argv)
     char solutionDatFileName[128];
     sprintf(solutionDatFileName, "solution.MPI_%d.dat", rank);
 
-    if (WriteGrid(initialDatFileName, &params, gridInit))
+    if (WriteGridHorPatch(initialDatFileName, &params, &horPatch, gridInit))
     {
         exit(1);
     }
-    if (WriteGrid(solutionDatFileName, &params, gridSol))
+    if (WriteGridHorPatch(solutionDatFileName, &params, &horPatch, gridSol))
     {
         exit(1);
     }
     /* Clean up */
-    FreeGrid(params.m_NRow, gridInit);
-    FreeGrid(params.m_NRow, gridSol);
+    FreeGrid(horPatch.m_NRow, gridInit);
+    FreeGrid(horPatch.m_NRow, gridSol);
     printf("Info: Exiting\n");
     MPI_Finalize();
 }
