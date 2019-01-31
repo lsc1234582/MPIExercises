@@ -22,8 +22,8 @@ int main(int argc, char**argv)
         PrintHelp();
         exit(1);
     }
-    char paramsFileName[128];
-    if(strlen(argv[1]) > 128)
+    char paramsFileName[MAX_FILE_NAME_LENGTH];
+    if(strlen(argv[1]) > MAX_FILE_NAME_LENGTH)
     {
         pprintf("Error: Parameter file name too long\n");
         exit(1);
