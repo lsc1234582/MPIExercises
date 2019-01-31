@@ -183,6 +183,9 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         assert(param1->m_NCol == param2->m_NCol);
         CopyGrid(grid1, param1, param1, resultGrid);
         CopyGrid(grid2, param2, param2, &resultGrid[param1->m_NRow]);
+        resultParam->m_NRow = param1->m_NRow + param2->m_NRow;
+        resultParam->m_XMin = param1->m_XMin;
+        resultParam->m_XMax = param2->m_XMax;
     }
     else if (axis == 1)
     {
@@ -192,13 +195,10 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
             memcpy(&resultGrid[i][0], &grid1[i][0], param1->m_NCol * sizeof(double));
             memcpy(&resultGrid[i][param1->m_NCol], &grid2[i][0], param2->m_NCol * sizeof(double));
         }
+        resultParam->m_NCol = param1->m_NCol + param2->m_NCol;
+        resultParam->m_YMin = param1->m_YMin;
+        resultParam->m_YMax = param2->m_YMax;
     }
-    resultParam->m_NCol = param1->m_NCol + param2->m_NCol;
-    resultParam->m_NRow = param1->m_NRow + param2->m_NRow;
-    resultParam->m_XMin = param1->m_XMin;
-    resultParam->m_XMax = param2->m_XMax;
-    resultParam->m_YMin = param1->m_YMin;
-    resultParam->m_YMax = param2->m_YMax;
     return 0;
 }
 
