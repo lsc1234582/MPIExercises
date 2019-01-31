@@ -22,7 +22,7 @@ void AllocateGridHorPatch(const Params* params, GridHorPatch* horPatch)
 
 void PrintHelp(void)
 {
-    printf("Usage: Init <ParamsFile> <FunctionSelection>\n\
+    printf("Usage: InitParRow <ParamsFile> <FunctionSelection>\n\
             <FunctionSelect>: [0..3]\n");
 }
 
@@ -46,8 +46,8 @@ int main(int argc, char**argv)
             PrintHelp();
             exit(1);
         }
-        char paramsFileName[128];
-        if(strlen(argv[1]) > 128)
+        char paramsFileName[MAX_FILE_NAME_LENGTH];
+        if(strlen(argv[1]) > MAX_FILE_NAME_LENGTH)
         {
             printf("Error: Parameter file name too long\n");
             exit(1);
@@ -119,9 +119,9 @@ int main(int argc, char**argv)
         x += dx;
     }
 
-    char initialDatFileName[128];
+    char initialDatFileName[MAX_FILE_NAME_LENGTH];
     sprintf(initialDatFileName, "initial.MPI_%d.dat", rank);
-    char solutionDatFileName[128];
+    char solutionDatFileName[MAX_FILE_NAME_LENGTH];
     sprintf(solutionDatFileName, "solution.MPI_%d.dat", rank);
 
     if (WriteGridHorPatch(initialDatFileName, &params, &horPatch, gridInit))
