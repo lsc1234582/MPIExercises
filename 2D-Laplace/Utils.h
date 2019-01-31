@@ -45,6 +45,8 @@ int ParseParameterFile(const char fileName[], Params* params);
 
 void PrintParameters(const Params* params);
 
+void PrintGrid(const Params* params, const double** grid);
+
 double** AllocateInitGrid(const int nRow, const int nCol);
 
 void FreeGrid(const int nRow, double** grid);

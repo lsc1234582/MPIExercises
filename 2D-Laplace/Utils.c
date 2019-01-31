@@ -144,7 +144,7 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
     {
         for (size_t j = 0; j < params->m_NCol; ++j)
         {
-            if(fscanf(fptr, "%*f %*f %lf\n", &grid1[i][j]) < 0)
+            if(fscanf(fptr, "%*f %*f %lf", &grid1[i][j]) < 0)
             {
                 printf("Error: Error in parsing %s\n", fileName);
                 fclose(fptr);
@@ -156,12 +156,6 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
             }
             //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
         }
-        if(fscanf(fptr, "\n") < 0)
-        {
-            printf("Error: Error in parsing %s\n", fileName);
-            fclose(fptr);
-            return 1;
-        }
     }
     fclose(fptr);
     return 0;
@@ -170,17 +164,14 @@ int ReadGrid(const char fileName[], const Params* params, double** grid1, double
 int ConcatenateGrid(const double** grid1, const double** grid2, const Params* param1, const Params* param2, const int axis, double** resultGrid, Params* resultParam)
 {
     assert(axis == 0 || axis == 1);
-    assert(param1->m_XMax <= param2->m_XMin);
-    assert(param1->m_YMax <= param2->m_YMin);
-    // Assert that dx and dy remain uniform before and after concatenating
-    assert((param2->m_XMin - param1->m_XMax) == ((param1->m_XMax - param1->m_XMin) / param1->m_NCol) &&
-           (param2->m_XMin - param1->m_XMax) == ((param2->m_XMax - param2->m_XMin) / param2->m_NCol));
-    assert((param2->m_YMin - param1->m_YMax) == ((param1->m_YMax - param1->m_YMin) / param1->m_NRow) &&
-           (param2->m_YMin - param1->m_YMax) == ((param2->m_YMax - param2->m_YMin) / param2->m_NRow));
 
     if (axis == 0)
     {
         assert(param1->m_NCol == param2->m_NCol);
+        assert(param1->m_XMax <= param2->m_XMin);
+        // Assert that dx remains uniform before and after concatenating
+        assert((param2->m_XMin - param1->m_XMax) == ((param1->m_XMax - param1->m_XMin) / param1->m_NRow) &&
+                (param2->m_XMin - param1->m_XMax) == ((param2->m_XMax - param2->m_XMin) / param2->m_NRow));
         CopyGrid(grid1, param1, param1, resultGrid);
         CopyGrid(grid2, param2, param2, &resultGrid[param1->m_NRow]);
         resultParam->m_NRow = param1->m_NRow + param2->m_NRow;
@@ -190,6 +181,10 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
     else if (axis == 1)
     {
         assert(param1->m_NRow == param2->m_NRow);
+        assert(param1->m_YMax <= param2->m_YMin);
+        // Assert that dy remains uniform before and after concatenating
+        assert((param2->m_YMin - param1->m_YMax) == ((param1->m_YMax - param1->m_YMin) / param1->m_NCol) &&
+               (param2->m_YMin - param1->m_YMax) == ((param2->m_YMax - param2->m_YMin) / param2->m_NCol));
         for (int i = 0; i < param1->m_NRow + param2->m_NRow; ++i)
         {
             memcpy(&resultGrid[i][0], &grid1[i][0], param1->m_NCol * sizeof(double));
@@ -198,6 +193,11 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         resultParam->m_NCol = param1->m_NCol + param2->m_NCol;
         resultParam->m_YMin = param1->m_YMin;
         resultParam->m_YMax = param2->m_YMax;
+    }
+    else
+    {
+        // Unsupported;
+        assert(0);
     }
     return 0;
 }
@@ -209,9 +209,28 @@ int CopyGrid(const double** srcGrid, const Params* srcParams, const Params* dstP
     {
         memcpy(dstGrid[i], srcGrid[i], srcParams->m_NCol * sizeof(double));
     }
-    return 1;
+    //printf("Src: =====Beg=======\n");
+    //PrintParameters(srcParams);
+    //PrintGrid(srcParams, (const double**)srcGrid);
+    //printf("Src: =====End=======\n");
+    //printf("Dst: =====Beg=======\n");
+    //PrintParameters(dstParams);
+    //PrintGrid(srcParams, (const double**)srcGrid);
+    //printf("Dst: =====End=======\n");
+    return 0;
 }
 
+void PrintGrid(const Params* params, const double** grid)
+{
+    for (int i = 0; i < params->m_NRow; ++i)
+    {
+        for (int j = 0; j < params->m_NCol; ++j)
+        {
+            printf("%lf ", grid[i][j]);
+        }
+        printf("\n");
+    }
+}
 
 int ConcatenateGridPatches(const double*** grids, const Params* params, const int numGridX, const int numGridY, double** resultGrid, Params* resultParam)
 {
@@ -222,23 +241,26 @@ int ConcatenateGridPatches(const double*** grids, const Params* params, const in
     double** prevIncompleteFullPatch;
     for (int i = 0; i < numGridX; ++i)
     {
-        Params currHorPatchParam = {0.0, 0.0, 0.0, 0.0, params[currPatchInx].m_NRow, params[currPatchInx].m_NCol, 0.0};
+        Params currHorPatchParam = params[currPatchInx];
         double** currHorPatch = AllocateInitGrid(currHorPatchParam.m_NRow, currHorPatchParam.m_NCol);
         CopyGrid(grids[currPatchInx], &currHorPatchParam, &currHorPatchParam, currHorPatch);
         Params prevIncompleteHorPatchParam = currHorPatchParam;
         double** prevIncompleteHorPatch = currHorPatch;
-        for (int j = 0; j < numGridY - 1; ++j)
+        for (int j = 0; j < numGridY; ++j)
         {
             currPatchInx++;
-            Params tempHorPatchParam = {0.0, 0.0, 0.0, 0.0, currHorPatchParam.m_NRow, currHorPatchParam.m_NCol + params[currPatchInx].m_NCol, 0.0};
-            double** tempHorPatch = AllocateInitGrid(tempHorPatchParam.m_NRow, tempHorPatchParam.m_NCol);
-            ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx + 1], &currHorPatchParam, &params[currPatchInx + 1], 1, tempHorPatch, &tempHorPatchParam);
-            currHorPatchParam = tempHorPatchParam;
-            currHorPatch = tempHorPatch;
-            FreeGrid(prevIncompleteHorPatchParam.m_NRow, prevIncompleteHorPatch);
-            prevIncompleteHorPatchParam = currHorPatchParam;
-            prevIncompleteHorPatch = currHorPatch;
-
+            if (j > 0)
+            {
+                Params tempHorPatchParam = currHorPatchParam;
+                tempHorPatchParam.m_NCol += params[currPatchInx].m_NCol;
+                double** tempHorPatch = AllocateInitGrid(tempHorPatchParam.m_NRow, tempHorPatchParam.m_NCol);
+                ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx + 1], &currHorPatchParam, &params[currPatchInx + 1], 1, tempHorPatch, &tempHorPatchParam);
+                currHorPatchParam = tempHorPatchParam;
+                currHorPatch = tempHorPatch;
+                FreeGrid(prevIncompleteHorPatchParam.m_NRow, prevIncompleteHorPatch);
+                prevIncompleteHorPatchParam = currHorPatchParam;
+                prevIncompleteHorPatch = currHorPatch;
+            }
         }
         if (i == 0)
         {
@@ -247,7 +269,8 @@ int ConcatenateGridPatches(const double*** grids, const Params* params, const in
         }
         else
         {
-            Params tempFullPatchParam = {0.0, 0.0, 0.0, 0.0, prevIncompleteFullPatchParam.m_NRow + currHorPatchParam.m_NRow, currHorPatchParam.m_NCol, 0.0};
+            Params tempFullPatchParam = currFullPatchParam;
+            tempFullPatchParam.m_NRow += currHorPatchParam.m_NRow;
             double** tempFullPatch = AllocateInitGrid(tempFullPatchParam.m_NRow, tempFullPatchParam.m_NCol);
             ConcatenateGrid((const double**)currFullPatch, (const double**)currHorPatch, &currFullPatchParam, &currHorPatchParam, 0, tempFullPatch, &tempFullPatchParam);
             currFullPatchParam = tempFullPatchParam;
@@ -261,6 +284,10 @@ int ConcatenateGridPatches(const double*** grids, const Params* params, const in
     }
     *resultParam = currFullPatchParam;
     resultGrid = currFullPatch;
+    printf("I: =====Beg=======\n");
+    PrintParameters(&currFullPatchParam);
+    PrintGrid(&currFullPatchParam, (const double**)currFullPatch);
+    printf("I: =====End=======\n");
     return 0;
 }
 
@@ -293,7 +320,7 @@ int ReadGridParams(const char fileName[], Params* params)
     {
         while (fgets(lineStr, 256, fptr) != NULL)
         {
-            if (sscanf(lineStr, "%lf %lf %*f", &x, &y) == 2)
+            if (sscanf(lineStr, "%lf %lf %*1f", &x, &y) == 2)
             {
                 //printf("%d, %d, %f, %f\n", i, j, x, y);
                 if (i == 0 && j == 0)
@@ -334,7 +361,7 @@ int ReadGridParams(const char fileName[], Params* params)
                 ly = y;
                 j++;
             }
-            else if (sscanf(lineStr, "%[\n]", &tmp) == 1)
+            else if (sscanf(lineStr, "%1c", &tmp) == 1 && tmp == '\n')
             {
                 //printf("New line\n");
                 if (params->m_NCol == -1)
@@ -353,7 +380,7 @@ int ReadGridParams(const char fileName[], Params* params)
             }
             else
             {
-                printf("Error: Error in parsing %s\n, illegal characters %s\n", fileName, lineStr);
+                printf("Error: Error in parsing %s, illegal characters %s\n", fileName, lineStr);
                 fclose(fptr);
                 return 1;
             }
