@@ -40,6 +40,20 @@ double (*const funcs[])(double, double) =
     func3
 };
 
+double GetDx(const Params* params)
+{
+    assert(params->m_XMax > params->m_XMin);
+    assert(params->m_NRow > 1);
+    return (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+}
+
+double GetDy(const Params* params)
+{
+    assert(params->m_YMax > params->m_YMin);
+    assert(params->m_NCol > 1);
+    return (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+}
+
 int CreateParameterMPIStructDataType(MPI_Datatype* newType)
 {
     const int numFields = 7;
@@ -170,7 +184,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         assert(param1->m_NCol == param2->m_NCol);
         assert(param1->m_XMax <= param2->m_XMin);
         // Assert that dx is uniform before concatenating
-        double dxDiff = fabs(((param1->m_XMax - param1->m_XMin) / param1->m_NRow) - ((param2->m_XMax - param2->m_XMin) / param2->m_NRow));
+        double dxDiff = fabs(GetDx(param1) - GetDx(param2));
         if (dxDiff > EPSILON)
         {
             printf("Warning: significant dx difference: %lf\n", dxDiff);
@@ -181,7 +195,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         resultParam->m_XMin = param1->m_XMin;
         resultParam->m_XMax = param2->m_XMax;
         // Assert that dx remains uniform after concatenating
-        dxDiff = fabs(((param1->m_XMax - param1->m_XMin) / param1->m_NRow) - ((resultParam->m_XMax - resultParam->m_XMin) / resultParam->m_NRow));
+        dxDiff = fabs(GetDx(param1) - GetDx(resultParam));
         if (dxDiff > EPSILON)
         {
             printf("Warning: significant dx difference: %lf\n", dxDiff);
@@ -192,7 +206,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         assert(param1->m_NRow == param2->m_NRow);
         assert(param1->m_YMax <= param2->m_YMin);
         // Assert that dy is uniform before concatenating
-        double dyDiff = fabs(((param1->m_YMax - param1->m_YMin) / param1->m_NCol) - ((param2->m_YMax - param2->m_YMin) / param2->m_NCol));
+        double dyDiff = fabs(GetDy(param1) - GetDy(param2));
         if (dyDiff > EPSILON)
         {
             printf("Warning: significant dy difference: %lf\n", dyDiff);
@@ -206,7 +220,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
         resultParam->m_YMin = param1->m_YMin;
         resultParam->m_YMax = param2->m_YMax;
         // Assert that dy remains uniform after concatenating
-        dyDiff = fabs(((param1->m_YMax - param1->m_YMin) / param1->m_NCol) - ((resultParam->m_YMax - resultParam->m_YMin) / resultParam->m_NCol));
+        dyDiff = fabs(GetDy(param1) - GetDy(resultParam));
         if (dyDiff > EPSILON)
         {
             printf("Warning: significant dy difference: %lf\n", dyDiff);
@@ -414,7 +428,7 @@ int ReadGridParams(const char fileName[], Params* params)
     return 0;
 }
 
-int ReadGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid1, double** grid2)
+int ReadGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid1, double** grid2)
 {
     printf("Info: Parsing grid data from %s\n", fileName);
     FILE* fptr;
@@ -459,8 +473,8 @@ int WriteGrid(const char fileName[], const Params* params, double** grid)
         return 1;
     }
 
-    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
-    const double dy = (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    const double dx = GetDx(params);
+    const double dy = GetDy(params);
     double x = params->m_XMin;
     double y = params->m_YMin;
     x = params->m_XMin;
@@ -483,7 +497,7 @@ int WriteGrid(const char fileName[], const Params* params, double** grid)
     return 0;
 }
 
-int WriteGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid)
+int WriteGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid)
 {
     printf("Info: Writing grid data to %s\n", fileName);
     FILE* fptr;
@@ -493,8 +507,8 @@ int WriteGridHorPatch(const char fileName[], const Params* params, const GridHor
         return 1;
     }
 
-    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
-    const double dy = (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    const double dx = GetDx(params);
+    const double dy = GetDy(params);
     double x = horPatch->m_PatchX;
     double y = params->m_YMin;
     x = horPatch->m_PatchX;

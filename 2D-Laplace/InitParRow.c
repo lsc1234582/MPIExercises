@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void AllocateGridHorPatch(const Params* params, GridHorPatch* horPatch)
+void AllocateGridHorPatch(const Params* params, GridPatch* horPatch)
 {
     int size;
     int rank;
@@ -16,8 +16,14 @@ void AllocateGridHorPatch(const Params* params, GridHorPatch* horPatch)
     const int partialRowSize = params->m_NRow % size;
     horPatch->m_NRow = (partialRowSize == 0 || rank < size - 1) ? fullRowSize : partialRowSize;
     horPatch->m_PatchI = rank * fullRowSize;
-    const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    const double dx = GetDx(params);
+    const double dy = GetDy(params);
     horPatch->m_PatchX = params->m_XMin + horPatch->m_PatchI * dx;
+    horPatch->m_NCol = params->m_NCol;
+    horPatch->m_PatchJ = 0;
+    horPatch->m_PatchY = params->m_YMin;
+    horPatch->m_Dx = dx;
+    horPatch->m_Dy = dy;
 }
 
 void PrintHelp(void)
@@ -73,11 +79,11 @@ int main(int argc, char**argv)
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&funcSelection, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
 
-    GridHorPatch horPatch;
+    GridPatch horPatch;
     AllocateGridHorPatch(&params, &horPatch);
 
-    const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);
-    const double dy = (params.m_YMax - params.m_YMin) / (params.m_NCol - 1);
+    const double dx = GetDx(&params);
+    const double dy = GetDy(&params);
 
     double (*func)(double, double) = funcs[funcSelection];
 

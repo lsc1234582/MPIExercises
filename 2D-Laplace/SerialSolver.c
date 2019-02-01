@@ -37,8 +37,8 @@ int SolveSerial(const Params* params)
 
         /* Solve boundary value problem with Jacobi iteration method */
         pprintf("Info: Solving...\n");
-        const double dx = (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
-        const double dy = (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+        const double dx = GetDx(params);
+        const double dy = GetDy(params);
         double x = params->m_XMin;
         double y = params->m_YMin;
         double maxDiff;

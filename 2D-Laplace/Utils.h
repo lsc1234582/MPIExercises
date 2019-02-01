@@ -23,9 +23,14 @@ typedef struct
 typedef struct
 {
     int m_NRow;
+    int m_NCol;
     int m_PatchI;
+    int m_PatchJ;
     double m_PatchX; 
-} GridHorPatch;
+    double m_PatchY; 
+    double m_Dx;
+    double m_Dy;
+} GridPatch;
 /* Analytical solutions
  * A series of functions that satisfy Laplace's equation
  */
@@ -39,6 +44,10 @@ double func3(double x, double y);
 
 /* Function map that holds the analytical solutions */
 extern double (*const funcs[])(double, double);
+
+double GetDx(const Params* params);
+
+double GetDy(const Params* params);
 
 int CreateParameterMPIStructDataType(MPI_Datatype* newtype);
 
@@ -55,12 +64,12 @@ void FreeGrid(const int nRow, double** grid);
 int CopyGrid(const double** srcGrid, const Params* srcParams, const Params* dstParams, double** dstGrid);
 
 int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2);
-int ReadGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid1, double** grid2);
+int ReadGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid1, double** grid2);
 
 int ReadGridParams(const char fileName[], Params* params);
 
 int WriteGrid(const char fileName[], const Params* params, double** grid);
-int WriteGridHorPatch(const char fileName[], const Params* params, const GridHorPatch* horPatch, double** grid);
+int WriteGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid);
 
 int pprintf(const char* fmt, ...);
 
