@@ -80,34 +80,20 @@ int ParseParameterFile(const char fileName[], Params* params)
         pprintf("Error: Cannot open parameter file %s for reading\n", fileName);
         return 1;
     }
-    if(fscanf(fptr, "XMin: %lf\n", &params->m_XMin) < 0)
+    if(fscanf(fptr, "XMin: %lf XMax: %lf YMin: %lf YMax: %lf NRow: %d NCol: %d Tolerance: %lf",
+                &params->m_XMin,
+                &params->m_XMax,
+                &params->m_YMin,
+                &params->m_YMax,
+                &params->m_NRow,
+                &params->m_NCol,
+                &params->m_Tolerance) < 7)
     {
+        printf("Error: Error in parsing parameter file %s\n", fileName);
+        fclose(fptr);
         return 1;
     }
-    if(fscanf(fptr, "XMax: %lf\n", &params->m_XMax) < 0)
-    {
-        return 1;
-    }
-    if(fscanf(fptr, "YMin: %lf\n", &params->m_YMin) < 0)
-    {
-        return 1;
-    }
-    if(fscanf(fptr, "YMax: %lf\n", &params->m_YMax) < 0)
-    {
-        return 1;
-    }
-    if(fscanf(fptr, "NRow: %d\n", &params->m_NRow) < 0)
-    {
-        return 1;
-    }
-    if(fscanf(fptr, "NCol: %d\n", &params->m_NCol) < 0)
-    {
-        return 1;
-    }
-    if(fscanf(fptr, "Tolerance: %lf\n", &params->m_Tolerance) < 0)
-    {
-        return 1;
-    }
+    fclose(fptr);
     return 0;
 }
 
