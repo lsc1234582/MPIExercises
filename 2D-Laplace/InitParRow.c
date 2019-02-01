@@ -6,26 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void AllocateGridHorPatch(const Params* params, GridPatch* horPatch)
-{
-    int size;
-    int rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    const int fullRowSize = ceil(params->m_NRow / size);
-    const int partialRowSize = params->m_NRow % size;
-    horPatch->m_NRow = (partialRowSize == 0 || rank < size - 1) ? fullRowSize : partialRowSize;
-    horPatch->m_PatchI = rank * fullRowSize;
-    const double dx = GetDx(params);
-    const double dy = GetDy(params);
-    horPatch->m_PatchX = params->m_XMin + horPatch->m_PatchI * dx;
-    horPatch->m_NCol = params->m_NCol;
-    horPatch->m_PatchJ = 0;
-    horPatch->m_PatchY = params->m_YMin;
-    horPatch->m_Dx = dx;
-    horPatch->m_Dy = dy;
-}
-
 void PrintHelp(void)
 {
     printf("Usage: InitParRow <ParamsFile> <FunctionSelection>\n\
@@ -41,8 +21,8 @@ int main(int argc, char**argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Datatype ParamsMPIType;
-    CreateParameterMPIStructDataType(&ParamsMPIType);
-    Params params;
+    CreateGridParameterMPIStructDataType(&ParamsMPIType);
+    GridParams params;
     /* Parse args */
     if (rank == MASTER_RANK)
     {
@@ -67,23 +47,20 @@ int main(int argc, char**argv)
             exit(1);
         }
         /* Parse and broadcast parameters */
-        if (ParseParameterFile(paramsFileName, &params))
+        if (ParseGridParameterFile(paramsFileName, &params))
         {
             printf("Error: Error in reading parameter file: %s\n", paramsFileName);
             exit(1);
         }
         printf("Info: Parameters:\n");
-        PrintParameters(&params);
+        PrintGridParameters(&params);
         printf("Info: Function selection: %d\n", funcSelection);
     }
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&funcSelection, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
 
-    GridPatch horPatch;
-    AllocateGridHorPatch(&params, &horPatch);
-
-    const double dx = GetDx(&params);
-    const double dy = GetDy(&params);
+    GridPatchParams horPatch;
+    GetGridPatchParams(&params, size, rank, size, 1, &horPatch);
 
     double (*func)(double, double) = funcs[funcSelection];
 
@@ -91,25 +68,25 @@ int main(int argc, char**argv)
             rank, rank);
     /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
      * 'solution.dat')) */
-    double** gridInit = AllocateInitGrid(horPatch.m_NRow, params.m_NCol);
+    double** gridInit = AllocateInitGridPatch(&horPatch);
     if (gridInit == NULL)
     {
         printf("Error: Error in allocating grid\n");
         exit(1);
     }
-    double** gridSol = AllocateInitGrid(horPatch.m_NRow, params.m_NCol);
+    double** gridSol = AllocateInitGridPatch(&horPatch);
     if (gridSol == NULL)
     {
         printf("Error: Error in allocating grid\n");
         exit(1);
     }
     double x = horPatch.m_PatchX;
-    double y = params.m_YMin;
-    for (size_t i = 0; i < horPatch.m_NRow; ++i)
+    double y = horPatch.m_PatchY;
+    for (size_t i = horPatch.m_AboveMargin; i < horPatch.m_NRow; ++i)
     {
         int globalI = horPatch.m_PatchI + i;
-        y = params.m_YMin;
-        for (size_t j = 0; j < params.m_NCol; ++j)
+        y = horPatch.m_PatchY;
+        for (size_t j = horPatch.m_LeftMargin; j < horPatch.m_NCol; ++j)
         {
             gridSol[i][j] = func(x, y);
             if (globalI > 0 && globalI < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
@@ -120,9 +97,9 @@ int main(int argc, char**argv)
             {
                 gridInit[i][j] = gridSol[i][j];
             }
-            y += dy;
+            y += horPatch.m_Dy;
         }
-        x += dx;
+        x += horPatch.m_Dx;
     }
 
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
@@ -130,17 +107,17 @@ int main(int argc, char**argv)
     char solutionDatFileName[MAX_FILE_NAME_LENGTH];
     sprintf(solutionDatFileName, "solution.MPI_%d.dat", rank);
 
-    if (WriteGridHorPatch(initialDatFileName, &params, &horPatch, gridInit))
+    if (WriteGridPatch(initialDatFileName, &horPatch, gridInit))
     {
         exit(1);
     }
-    if (WriteGridHorPatch(solutionDatFileName, &params, &horPatch, gridSol))
+    if (WriteGridPatch(solutionDatFileName, &horPatch, gridSol))
     {
         exit(1);
     }
     /* Clean up */
-    FreeGrid(horPatch.m_NRow, gridInit);
-    FreeGrid(horPatch.m_NRow, gridSol);
+    FreeGridPatch(&horPatch, gridInit);
+    FreeGridPatch(&horPatch, gridSol);
     printf("Info: Exiting\n");
     MPI_Finalize();
 }

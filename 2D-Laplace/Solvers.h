@@ -3,6 +3,6 @@
 #include "Utils.h"
 
 
-int SolveSerial(const Params* params);
+int SolveSerial(const GridParams* params);
 
 #endif

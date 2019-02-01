@@ -29,15 +29,15 @@ int main(int argc, char**argv)
         exit(1);
     }
     strncpy(paramsFileName, argv[1], strlen(argv[1]));
-    Params params;
+    GridParams params;
 
-    if (ParseParameterFile(paramsFileName, &params))
+    if (ParseGridParameterFile(paramsFileName, &params))
     {
         pprintf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
     pprintf("Info: Parameters:\n");
-    PrintParameters(&params);
+    PrintGridParameters(&params);
 
     SolveSerial(&params);
 

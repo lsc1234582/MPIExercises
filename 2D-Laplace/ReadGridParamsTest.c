@@ -2,10 +2,10 @@
 
 int main(int argc, char** argv)
 {
-    Params params;
+    GridParams params;
 
     ReadGridParams("grid_params.dat", &params);
-    PrintParameters(&params);
+    PrintGridParameters(&params);
 
     return 0;
 }

@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     }
 
     /* Read source grid parameters and source grid data */
-    Params params[numPatches];
+    GridParams params[numPatches];
     double** grids[numPatches];
     for (int i = 0; i < numPatches; ++i)
     {
@@ -76,9 +76,9 @@ int main(int argc, char** argv)
     }
 
     /* Perform concatenation */
-    Params dstParams;
+    GridParams dstParams;
     double** dstGrid = AllocateInitGrid(totalNumRow, totalNumCol);
-    ConcatenateGridPatches((const double***)grids, params, numPatchInX, numPatchInY, dstGrid, &dstParams);
+    ConcatenateGrids((const double***)grids, params, numPatchInX, numPatchInY, dstGrid, &dstParams);
 
     /* Write destination grid data */
     WriteGrid(dstDatFileName, &dstParams, dstGrid);

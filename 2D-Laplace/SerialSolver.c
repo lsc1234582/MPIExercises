@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int SolveSerial(const Params* params)
+int SolveSerial(const GridParams* params)
 {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

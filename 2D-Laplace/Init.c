@@ -34,14 +34,14 @@ int main(int argc, char**argv)
         exit(1);
     }
 
-    Params params;
-    if (ParseParameterFile(paramsFileName, &params))
+    GridParams params;
+    if (ParseGridParameterFile(paramsFileName, &params))
     {
         printf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
     printf("Info: Parameters:\n");
-    PrintParameters(&params);
+    PrintGridParameters(&params);
     printf("Info: Function selection: %d\n", funcSelection);
 
     const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);

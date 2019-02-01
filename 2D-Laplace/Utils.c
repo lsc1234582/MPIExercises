@@ -40,39 +40,39 @@ double (*const funcs[])(double, double) =
     func3
 };
 
-double GetDx(const Params* params)
+double GetDx(const GridParams* params)
 {
     assert(params->m_XMax > params->m_XMin);
     assert(params->m_NRow > 1);
     return (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
 }
 
-double GetDy(const Params* params)
+double GetDy(const GridParams* params)
 {
     assert(params->m_YMax > params->m_YMin);
     assert(params->m_NCol > 1);
     return (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
 }
 
-int CreateParameterMPIStructDataType(MPI_Datatype* newType)
+int CreateGridParameterMPIStructDataType(MPI_Datatype* newType)
 {
     const int numFields = 7;
     int blockLengths[] = {1, 1, 1, 1, 1, 1, 1};
     MPI_Datatype blockTypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE};
     MPI_Aint blockDisplacements[numFields];
-    blockDisplacements[0] = offsetof(Params, m_XMin);
-    blockDisplacements[1] = offsetof(Params, m_XMax);
-    blockDisplacements[2] = offsetof(Params, m_YMin);
-    blockDisplacements[3] = offsetof(Params, m_YMax);
-    blockDisplacements[4] = offsetof(Params, m_NRow);
-    blockDisplacements[5] = offsetof(Params, m_NCol);
-    blockDisplacements[6] = offsetof(Params, m_Tolerance);
+    blockDisplacements[0] = offsetof(GridParams, m_XMin);
+    blockDisplacements[1] = offsetof(GridParams, m_XMax);
+    blockDisplacements[2] = offsetof(GridParams, m_YMin);
+    blockDisplacements[3] = offsetof(GridParams, m_YMax);
+    blockDisplacements[4] = offsetof(GridParams, m_NRow);
+    blockDisplacements[5] = offsetof(GridParams, m_NCol);
+    blockDisplacements[6] = offsetof(GridParams, m_Tolerance);
     MPI_Type_create_struct(numFields, blockLengths, blockDisplacements, blockTypes, newType);
     MPI_Type_commit(newType);
     return 0;
 }
 
-int ParseParameterFile(const char fileName[], Params* params)
+int ParseGridParameterFile(const char fileName[], GridParams* params)
 {
     FILE* fptr;
     if ((fptr = fopen(fileName, "r")) == NULL)
@@ -97,7 +97,7 @@ int ParseParameterFile(const char fileName[], Params* params)
     return 0;
 }
 
-void PrintParameters(const Params* params)
+void PrintGridParameters(const GridParams* params)
 {
     pprintf("XMin:\t%lf\nXMax:\t%lf\nYMin:\t%lf\nYMax:\t%lf\nNRow:\t%d\nNCol:\t%d\nTolerance:\t%lf\n",
             params->m_XMin, params->m_XMax, params->m_YMin, params->m_YMax,
@@ -121,6 +121,12 @@ double** AllocateInitGrid(const int nRow, const int nCol)
     return grid;
 }
 
+double** AllocateInitGridPatch(const GridPatchParams* patch)
+{
+    return AllocateInitGrid(patch->m_NRow + patch->m_AboveMargin + patch->m_BelowMargin,
+            patch->m_NCol + patch->m_LeftMargin + patch->m_RightMargin);
+}
+
 void FreeGrid(const int nRow, double** grid)
 {
     for (int i = 0; i < nRow; ++i)
@@ -130,38 +136,12 @@ void FreeGrid(const int nRow, double** grid)
     free(grid);
 }
 
-int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2)
+void FreeGridPatch(const GridPatchParams* patch, double** grid)
 {
-    printf("Info: Parsing grid data from %s\n", fileName);
-    FILE* fptr;
-    if ((fptr = fopen(fileName, "r")) == NULL)
-    {
-        printf("Error: Cannot open %s for reading\n", fileName);
-        fclose(fptr);
-        return 1;
-    }
-    for (size_t i = 0; i < params->m_NRow; ++i)
-    {
-        for (size_t j = 0; j < params->m_NCol; ++j)
-        {
-            if(fscanf(fptr, "%*f %*f %lf", &grid1[i][j]) < 0)
-            {
-                printf("Error: Error in parsing %s\n", fileName);
-                fclose(fptr);
-                return 1;
-            }
-            if (grid2 != NULL)
-            {
-                grid2[i][j] = grid1[i][j];
-            }
-            //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
-        }
-    }
-    fclose(fptr);
-    return 0;
+    FreeGrid(patch->m_NRow + patch->m_AboveMargin + patch->m_BelowMargin, grid);
 }
 
-int ConcatenateGrid(const double** grid1, const double** grid2, const Params* param1, const Params* param2, const int axis, double** resultGrid, Params* resultParam)
+int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams* param1, const GridParams* param2, const int axis, double** resultGrid, GridParams* resultParam)
 {
     assert(axis == 0 || axis == 1);
 
@@ -220,7 +200,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const Params* pa
     return 0;
 }
 
-int CopyGrid(const double** srcGrid, const Params* srcParams, const Params* dstParams, double** dstGrid)
+int CopyGrid(const double** srcGrid, const GridParams* srcParams, const GridParams* dstParams, double** dstGrid)
 {
     assert(srcParams->m_NCol == dstParams->m_NCol && srcParams->m_NRow == dstParams->m_NRow);
     for (int i = 0; i < srcParams->m_NRow; ++i)
@@ -230,7 +210,7 @@ int CopyGrid(const double** srcGrid, const Params* srcParams, const Params* dstP
     return 0;
 }
 
-void PrintGrid(const Params* params, const double** grid)
+void PrintGrid(const GridParams* params, const double** grid)
 {
     for (int i = 0; i < params->m_NRow; ++i)
     {
@@ -242,26 +222,26 @@ void PrintGrid(const Params* params, const double** grid)
     }
 }
 
-int ConcatenateGridPatches(const double*** grids, const Params* params, const int numGridX, const int numGridY, double** resultGrid, Params* resultParam)
+int ConcatenateGrids(const double*** grids, const GridParams* params, const int numGridX, const int numGridY, double** resultGrid, GridParams* resultParam)
 {
     int currPatchInx = 0;
-    Params currFullPatchParam;
+    GridParams currFullPatchParam;
     double** currFullPatch;
-    Params prevIncompleteFullPatchParam;
+    GridParams prevIncompleteFullPatchParam;
     double** prevIncompleteFullPatch;
     for (int i = 0; i < numGridX; ++i)
     {
-        Params currHorPatchParam = params[currPatchInx];
+        GridParams currHorPatchParam = params[currPatchInx];
         double** currHorPatch = AllocateInitGrid(currHorPatchParam.m_NRow, currHorPatchParam.m_NCol);
         CopyGrid(grids[currPatchInx], &currHorPatchParam, &currHorPatchParam, currHorPatch);
-        Params prevIncompleteHorPatchParam = currHorPatchParam;
+        GridParams prevIncompleteHorPatchParam = currHorPatchParam;
         double** prevIncompleteHorPatch = currHorPatch;
         for (int j = 0; j < numGridY; ++j)
         {
             currPatchInx++;
             if (j > 0)
             {
-                Params tempHorPatchParam = currHorPatchParam;
+                GridParams tempHorPatchParam = currHorPatchParam;
                 tempHorPatchParam.m_NCol += params[currPatchInx].m_NCol;
                 double** tempHorPatch = AllocateInitGrid(tempHorPatchParam.m_NRow, tempHorPatchParam.m_NCol);
                 ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx + 1], &currHorPatchParam, &params[currPatchInx + 1], 1, tempHorPatch, &tempHorPatchParam);
@@ -279,7 +259,7 @@ int ConcatenateGridPatches(const double*** grids, const Params* params, const in
         }
         else
         {
-            Params tempFullPatchParam = currFullPatchParam;
+            GridParams tempFullPatchParam = currFullPatchParam;
             tempFullPatchParam.m_NRow += currHorPatchParam.m_NRow;
             double** tempFullPatch = AllocateInitGrid(tempFullPatchParam.m_NRow, tempFullPatchParam.m_NCol);
             ConcatenateGrid((const double**)currFullPatch, (const double**)currHorPatch, &currFullPatchParam, &currHorPatchParam, 0, tempFullPatch, &tempFullPatchParam);
@@ -304,7 +284,7 @@ int ConcatenateGridPatches(const double*** grids, const Params* params, const in
 /* A crude parser to read parameters from raw .dat file
  * Note that the format is more strict than the gnuplot .dat file in that each row of points must be followed by
  * exactly one empty line*/
-int ReadGridParams(const char fileName[], Params* params)
+int ReadGridParams(const char fileName[], GridParams* params)
 {
     printf("Info: Parsing grid parameters from %s\n", fileName);
     FILE* fptr;
@@ -409,47 +389,72 @@ int ReadGridParams(const char fileName[], Params* params)
     params->m_XMax = x;
     params->m_YMax = y;
     params->m_NRow = i;
-    PrintParameters(params);
+    PrintGridParameters(params);
     fclose(fptr);
     return 0;
 }
 
-int ReadGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid1, double** grid2)
+int ReadGrid(const char fileName[], const GridParams* params, double** grid1, double** grid2)
 {
     printf("Info: Parsing grid data from %s\n", fileName);
     FILE* fptr;
     if ((fptr = fopen(fileName, "r")) == NULL)
     {
         printf("Error: Cannot open %s for reading\n", fileName);
-        fclose(fptr);
         return 1;
     }
-    for (size_t i = 0; i < horPatch->m_NRow; ++i)
+    for (size_t i = 0; i < params->m_NRow; ++i)
     {
         for (size_t j = 0; j < params->m_NCol; ++j)
         {
-            if(fscanf(fptr, "%*f %*f %lf\n", &grid1[i][j]) < 0)
+            if(fscanf(fptr, "%*f %*f %lf", &grid1[i][j]) < 0)
             {
                 printf("Error: Error in parsing %s\n", fileName);
                 fclose(fptr);
                 return 1;
             }
-            grid2[i][j] = grid1[i][j];
+            if (grid2 != NULL)
+            {
+                grid2[i][j] = grid1[i][j];
+            }
             //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
-        }
-        if(fscanf(fptr, "\n") < 0)
-        {
-            printf("Error: Error in parsing %s\n", fileName);
-            fclose(fptr);
-            return 1;
         }
     }
     fclose(fptr);
-
     return 0;
 }
 
-int WriteGrid(const char fileName[], const Params* params, double** grid)
+int ReadGridPatch(const char fileName[], const GridPatchParams* patch, double** grid1, double** grid2)
+{
+    printf("Info: Parsing grid data from %s\n", fileName);
+    FILE* fptr;
+    if ((fptr = fopen(fileName, "r")) == NULL)
+    {
+        printf("Error: Cannot open %s for reading\n", fileName);
+        return 1;
+    }
+    for (size_t i = patch->m_AboveMargin; i < patch->m_NRow; ++i)
+    {
+        for (size_t j = patch->m_LeftMargin; j < patch->m_NCol; ++j)
+        {
+            if(fscanf(fptr, "%*f %*f %lf", &grid1[i][j]) < 0)
+            {
+                printf("Error: Error in parsing %s\n", fileName);
+                fclose(fptr);
+                return 1;
+            }
+            if (grid2 != NULL)
+            {
+                grid2[i][j] = grid1[i][j];
+            }
+            //printf("READ: %f %f %f\n", x, y, grid1[i][j]);
+        }
+    }
+    fclose(fptr);
+    return 0;
+}
+
+int WriteGrid(const char fileName[], const GridParams* params, double** grid)
 {
     printf("Info: Writing grid data to %s\n", fileName);
     FILE* fptr;
@@ -483,7 +488,7 @@ int WriteGrid(const char fileName[], const Params* params, double** grid)
     return 0;
 }
 
-int WriteGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid)
+int WriteGridPatch(const char fileName[], const GridPatchParams* patch, double** grid)
 {
     printf("Info: Writing grid data to %s\n", fileName);
     FILE* fptr;
@@ -493,21 +498,19 @@ int WriteGridHorPatch(const char fileName[], const Params* params, const GridPat
         return 1;
     }
 
-    const double dx = GetDx(params);
-    const double dy = GetDy(params);
-    double x = horPatch->m_PatchX;
-    double y = params->m_YMin;
-    x = horPatch->m_PatchX;
-    for (size_t i = 0; i < horPatch->m_NRow; ++i)
+    double x = patch->m_PatchX;
+    double y = patch->m_PatchY;
+    x = patch->m_PatchX;
+    for (size_t i = patch->m_AboveMargin; i < patch->m_NRow; ++i)
     {
-        y = params->m_YMin;
-        for (size_t j = 0; j < params->m_NCol; ++j)
+        y = patch->m_PatchY;
+        for (size_t j = patch->m_LeftMargin; j < patch->m_NCol; ++j)
         {
             fprintf(fptr, "%f %f %f\n", x, y, grid[i][j]);
-            y += dy;
+            y += patch->m_Dy;
         }
         fprintf(fptr, "\n");
-        x += dx;
+        x += patch->m_Dx;
     }
     if(fclose(fptr))
     {
@@ -538,5 +541,52 @@ int pprintf(const char* fmt, ...)
         va_end(args);
     }
     return 0;
+}
+
+static int CoordToIndColMajor(const int rowInd, const int colInd, const int nRow, const int nCol)
+{
+    assert(nRow > 0 && nCol > 0);
+    assert(rowInd >= 0 && rowInd < nRow);
+    assert(colInd >= 0 && colInd < nCol);
+    return rowInd * nCol + colInd;
+}
+
+static void IndToCoordColMajor(const int ind, const int nRow, const int nCol, int* rowInd, int* colInd)
+{
+    assert(nRow > 0 && nCol > 0);
+    assert(ind >= 0 && ind < nRow * nCol);
+    *colInd = ind % nCol;
+    *rowInd = floor(ind / nCol); 
+}
+
+void GetGridPatchParams(const GridParams* params, const int size, const int rank, const int nPatchInX, const int nPatchInY, GridPatchParams* patch)
+{
+    assert(size == nPatchInX * nPatchInY);
+    const int fullRowSize = ceil(params->m_NRow / nPatchInX);
+    const int partialRowSize = params->m_NRow % nPatchInX;
+    const int fullColSize = ceil(params->m_NCol / nPatchInY);
+    const int partialColSize = params->m_NCol % nPatchInY;
+    const double dx = GetDx(params);
+    const double dy = GetDy(params);
+
+    int patchI, patchJ;
+    IndToCoordColMajor(rank, nPatchInX, nPatchInY, &patchI, &patchJ);
+
+    patch->m_NRow = (partialRowSize == 0 || patchI < nPatchInX - 1) ? fullRowSize : partialRowSize;
+    patch->m_NCol = (partialColSize == 0 || patchJ < nPatchInY - 1) ? fullColSize : partialColSize;
+    patch->m_PatchI = nPatchInX * fullRowSize;
+    patch->m_PatchJ = nPatchInY * fullColSize;
+    patch->m_PatchX = params->m_XMin + patch->m_PatchI * dx;
+    patch->m_PatchY = params->m_YMin + patch->m_PatchJ * dy;
+    patch->m_Dx = dx;
+    patch->m_Dy = dy;
+    patch->m_LeftRank = patchJ > 0 ? CoordToIndColMajor(patchI, patchJ - 1, nPatchInX, nPatchInY) : -1;
+    patch->m_RightRank = patchJ < nPatchInY - 1 ? CoordToIndColMajor(patchI, patchJ + 1, nPatchInX, nPatchInY) : -1;
+    patch->m_AboveRank = patchI > 0 ? CoordToIndColMajor(patchI - 1, patchJ, nPatchInX, nPatchInY) : -1;
+    patch->m_BelowRank = patchI < nPatchInX - 1 ? CoordToIndColMajor(patchI + 1, patchJ, nPatchInX, nPatchInY) : -1;
+    patch->m_LeftMargin = 1;
+    patch->m_RightMargin = 1;
+    patch->m_AboveMargin = 1;
+    patch->m_BelowMargin = 1;
 }
 

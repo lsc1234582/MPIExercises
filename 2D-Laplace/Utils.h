@@ -7,7 +7,7 @@
 #define MAX_FILE_NAME_LENGTH 128
 #define EPSILON 0.001
 
-/* Parameters TODO: comments*/
+/* Global Grid Parameters TODO: comments*/
 typedef struct
 {
     double m_XMin;
@@ -17,9 +17,9 @@ typedef struct
     int m_NRow;
     int m_NCol;
     double m_Tolerance;
-} Params;
+} GridParams;
 
-
+/* Local Grid Patch Parameters TODO: comments*/
 typedef struct
 {
     int m_NRow;
@@ -30,7 +30,15 @@ typedef struct
     double m_PatchY; 
     double m_Dx;
     double m_Dy;
-} GridPatch;
+    int m_LeftRank;
+    int m_RightRank;
+    int m_AboveRank;
+    int m_BelowRank;
+    int m_LeftMargin;
+    int m_RightMargin;
+    int m_AboveMargin;
+    int m_BelowMargin;
+} GridPatchParams;
 /* Analytical solutions
  * A series of functions that satisfy Laplace's equation
  */
@@ -45,35 +53,42 @@ double func3(double x, double y);
 /* Function map that holds the analytical solutions */
 extern double (*const funcs[])(double, double);
 
-double GetDx(const Params* params);
+double GetDx(const GridParams* params);
 
-double GetDy(const Params* params);
+double GetDy(const GridParams* params);
 
-int CreateParameterMPIStructDataType(MPI_Datatype* newtype);
+int CreateGridParameterMPIStructDataType(MPI_Datatype* newtype);
 
-int ParseParameterFile(const char fileName[], Params* params);
+int ParseGridParameterFile(const char fileName[], GridParams* params);
 
-void PrintParameters(const Params* params);
+void PrintGridParameters(const GridParams* params);
 
-void PrintGrid(const Params* params, const double** grid);
+void PrintGrid(const GridParams* params, const double** grid);
+
+void GetGridPatchParams(const GridParams* params, const int size, const int rank, const int nPatchInX, const int nPatchInY, GridPatchParams* patch);
 
 double** AllocateInitGrid(const int nRow, const int nCol);
 
+double** AllocateInitGridPatch(const GridPatchParams* patch);
+
 void FreeGrid(const int nRow, double** grid);
 
-int CopyGrid(const double** srcGrid, const Params* srcParams, const Params* dstParams, double** dstGrid);
+void FreeGridPatch(const GridPatchParams* patch, double** grid);
 
-int ReadGrid(const char fileName[], const Params* params, double** grid1, double** grid2);
-int ReadGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid1, double** grid2);
+int CopyGrid(const double** srcGrid, const GridParams* srcParams, const GridParams* dstParams, double** dstGrid);
 
-int ReadGridParams(const char fileName[], Params* params);
+int ReadGrid(const char fileName[], const GridParams* params, double** grid1, double** grid2);
+int ReadGridPatch(const char fileName[], const GridPatchParams* patch, double** grid1, double** grid2);
 
-int WriteGrid(const char fileName[], const Params* params, double** grid);
-int WriteGridHorPatch(const char fileName[], const Params* params, const GridPatch* horPatch, double** grid);
+int ReadGridParams(const char fileName[], GridParams* params);
+
+int WriteGrid(const char fileName[], const GridParams* params, double** grid);
+int WriteGridPatch(const char fileName[], const GridPatchParams* patch, double** grid);
 
 int pprintf(const char* fmt, ...);
 
-int ConcatenateGrid(const double** grid1, const double** grid2, const Params* param1, const Params* param2, const int axis, double** resultGrid, Params* resultParam);
+int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams* param1, const GridParams* param2, const int axis, double** resultGrid, GridParams* resultParam);
+int ConcatenateGrids(const double*** grids, const GridParams* params, const int numGridX, const int numGridY, double** resultGrid, GridParams* resultParam);
 
-int ConcatenateGridPatches(const double*** grids, const Params* params, const int numGridX, const int numGridY, double** resultGrid, Params* resultParam);
+
 #endif
