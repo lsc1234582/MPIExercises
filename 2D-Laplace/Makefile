@@ -1,7 +1,7 @@
 CC=mpicc
-CFLAGS=-Wall -g -O3
+CFLAGS=-Wall -g -O0
 LDLIBS=-lm
-ALL=Init Solve InitParRow Combine ReadGridParamsTest
+ALL=Init Solve InitParRow Combine ReadGridParamsTest SolveParRow
 
 .PHONY: all
 all: ${ALL}
@@ -17,6 +17,8 @@ Combine: Combine.o Utils.o
 Utils.o: Utils.h Utils.c
 
 ReadGridParamsTest: ReadGridParamsTest.o Utils.o
+
+SolveParRow: SolveParRow.o Utils.o
 
 .PHONY: clean
 clean:

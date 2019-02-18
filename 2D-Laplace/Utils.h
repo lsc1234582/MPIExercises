@@ -22,7 +22,7 @@ typedef struct
 /* Local Grid Patch Parameters TODO: comments*/
 typedef struct
 {
-    int m_NRow;
+    int m_NRow; // Number of rows of the valid reading region.
     int m_NCol;
     int m_PatchI;
     int m_PatchJ;
@@ -34,10 +34,17 @@ typedef struct
     int m_RightRank;
     int m_AboveRank;
     int m_BelowRank;
-    int m_LeftMargin;
+    int m_LeftMargin;  // Width of the 'halo' area
     int m_RightMargin;
     int m_AboveMargin;
     int m_BelowMargin;
+    int m_NTotRow;   // Number of rows of the whole grid patch = m_NRow + m_LeftMargin + m_RightMargin
+    int m_NTotCol;
+
+    int m_LeftPadding;  // Width of the padding
+    int m_RightPadding; 
+    int m_AbovePadding;
+    int m_BelowPadding;
 } GridPatchParams;
 /* Analytical solutions
  * A series of functions that satisfy Laplace's equation
@@ -59,6 +66,8 @@ double GetDy(const GridParams* params);
 
 int CreateGridParameterMPIStructDataType(MPI_Datatype* newtype);
 
+int CreateVertMarginMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype);
+
 int ParseGridParameterFile(const char fileName[], GridParams* params);
 
 void PrintGridParameters(const GridParams* params);
@@ -71,9 +80,7 @@ double** AllocateInitGrid(const int nRow, const int nCol);
 
 double** AllocateInitGridPatch(const GridPatchParams* patch);
 
-void FreeGrid(const int nRow, double** grid);
-
-void FreeGridPatch(const GridPatchParams* patch, double** grid);
+void FreeGrid(double** grid);
 
 int CopyGrid(const double** srcGrid, const GridParams* srcParams, const GridParams* dstParams, double** dstGrid);
 

@@ -77,8 +77,8 @@ int SolveSerial(const GridParams* params)
         }
 
         /* Clean up */
-        FreeGrid(params->m_NRow, grid2);
-        FreeGrid(params->m_NRow, grid1);
+        FreeGrid(grid2);
+        FreeGrid(grid1);
     }
     return 0;
 }

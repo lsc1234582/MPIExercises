@@ -72,6 +72,12 @@ int CreateGridParameterMPIStructDataType(MPI_Datatype* newType)
     return 0;
 }
 
+int CreateVertMarginMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype)
+{
+    //TODO:
+    return 1;
+}
+
 int ParseGridParameterFile(const char fileName[], GridParams* params)
 {
     FILE* fptr;
@@ -104,41 +110,35 @@ void PrintGridParameters(const GridParams* params)
             params->m_NRow, params->m_NCol, params->m_Tolerance);
 }
 
+/* Allocate a continuous block of memory for a 2D array (grid) */
 double** AllocateInitGrid(const int nRow, const int nCol)
 {
-    double** grid = malloc(nRow * sizeof(double*));
+    double** grid = (double**) malloc(nRow * sizeof(double*));
     if (grid == NULL)
     {
         return NULL;
     }
-    for (int i = 0; i < nRow; ++i)
+    grid[0] = (double*) malloc(nRow * nCol * sizeof(double));
+    if (grid[0] == NULL)
     {
-        if ((grid[i] = calloc(nCol, sizeof(double))) == NULL)
-        {
-            return NULL;
-        }
+        return NULL;
+    }
+    for (int i = 1; i < nRow; ++i)
+    {
+        grid[i] = grid[i - 1] + nCol;
     }
     return grid;
 }
 
 double** AllocateInitGridPatch(const GridPatchParams* patch)
 {
-    return AllocateInitGrid(patch->m_NRow + patch->m_AboveMargin + patch->m_BelowMargin,
-            patch->m_NCol + patch->m_LeftMargin + patch->m_RightMargin);
+    return AllocateInitGrid(patch->m_NTotRow, patch->m_NTotCol);
 }
 
-void FreeGrid(const int nRow, double** grid)
+void FreeGrid(double** grid)
 {
-    for (int i = 0; i < nRow; ++i)
-    {
-        free(grid[i]);
-    }
+    free(grid[0]);
     free(grid);
-}
-
-void FreeGridPatch(const GridPatchParams* patch, double** grid)
-{
-    FreeGrid(patch->m_NRow + patch->m_AboveMargin + patch->m_BelowMargin, grid);
 }
 
 int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams* param1, const GridParams* param2, const int axis, double** resultGrid, GridParams* resultParam)
@@ -247,7 +247,7 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
                 ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx + 1], &currHorPatchParam, &params[currPatchInx + 1], 1, tempHorPatch, &tempHorPatchParam);
                 currHorPatchParam = tempHorPatchParam;
                 currHorPatch = tempHorPatch;
-                FreeGrid(prevIncompleteHorPatchParam.m_NRow, prevIncompleteHorPatch);
+                FreeGrid(prevIncompleteHorPatch);
                 prevIncompleteHorPatchParam = currHorPatchParam;
                 prevIncompleteHorPatch = currHorPatch;
             }
@@ -265,7 +265,7 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
             ConcatenateGrid((const double**)currFullPatch, (const double**)currHorPatch, &currFullPatchParam, &currHorPatchParam, 0, tempFullPatch, &tempFullPatchParam);
             currFullPatchParam = tempFullPatchParam;
             currFullPatch = tempFullPatch;
-            FreeGrid(prevIncompleteFullPatchParam.m_NRow, prevIncompleteFullPatch);
+            FreeGrid(prevIncompleteFullPatch);
             prevIncompleteFullPatchParam = currFullPatchParam;
             prevIncompleteFullPatch = currFullPatch;
         }
@@ -563,9 +563,9 @@ void GetGridPatchParams(const GridParams* params, const int size, const int rank
 {
     assert(size == nPatchInX * nPatchInY);
     const int fullRowSize = ceil(params->m_NRow / nPatchInX);
-    const int partialRowSize = params->m_NRow % nPatchInX;
+    const int partialRowSize = params->m_NRow % fullRowSize;
     const int fullColSize = ceil(params->m_NCol / nPatchInY);
-    const int partialColSize = params->m_NCol % nPatchInY;
+    const int partialColSize = params->m_NCol % fullColSize;
     const double dx = GetDx(params);
     const double dy = GetDy(params);
 
@@ -574,19 +574,27 @@ void GetGridPatchParams(const GridParams* params, const int size, const int rank
 
     patch->m_NRow = (partialRowSize == 0 || patchI < nPatchInX - 1) ? fullRowSize : partialRowSize;
     patch->m_NCol = (partialColSize == 0 || patchJ < nPatchInY - 1) ? fullColSize : partialColSize;
-    patch->m_PatchI = nPatchInX * fullRowSize;
-    patch->m_PatchJ = nPatchInY * fullColSize;
+    patch->m_PatchI = patchI * fullRowSize;
+    patch->m_PatchJ = patchJ * fullColSize;
     patch->m_PatchX = params->m_XMin + patch->m_PatchI * dx;
     patch->m_PatchY = params->m_YMin + patch->m_PatchJ * dy;
     patch->m_Dx = dx;
     patch->m_Dy = dy;
-    patch->m_LeftRank = patchJ > 0 ? CoordToIndColMajor(patchI, patchJ - 1, nPatchInX, nPatchInY) : -1;
-    patch->m_RightRank = patchJ < nPatchInY - 1 ? CoordToIndColMajor(patchI, patchJ + 1, nPatchInX, nPatchInY) : -1;
-    patch->m_AboveRank = patchI > 0 ? CoordToIndColMajor(patchI - 1, patchJ, nPatchInX, nPatchInY) : -1;
-    patch->m_BelowRank = patchI < nPatchInX - 1 ? CoordToIndColMajor(patchI + 1, patchJ, nPatchInX, nPatchInY) : -1;
-    patch->m_LeftMargin = 1;
-    patch->m_RightMargin = 1;
-    patch->m_AboveMargin = 1;
-    patch->m_BelowMargin = 1;
+    patch->m_AboveRank = patchI > 0 ? CoordToIndColMajor(patchI - 1, patchJ, nPatchInX, nPatchInY) : MPI_PROC_NULL;
+    patch->m_BelowRank = patchI < nPatchInX - 1 ? CoordToIndColMajor(patchI + 1, patchJ, nPatchInX, nPatchInY) : MPI_PROC_NULL;
+    patch->m_LeftRank = patchJ > 0 ? CoordToIndColMajor(patchI, patchJ - 1, nPatchInX, nPatchInY) : MPI_PROC_NULL;
+    patch->m_RightRank = patchJ < nPatchInY - 1 ? CoordToIndColMajor(patchI, patchJ + 1, nPatchInX, nPatchInY) : MPI_PROC_NULL;
+    // Do not have any 'halo'/margin in x/y if there's no division happening in that axis (nPatchIn... == 1) or if the
+    // patch is located at the edge
+    patch->m_AboveMargin = (nPatchInX > 1 && patchI > 0) ? 1 : 0;
+    patch->m_BelowMargin = (nPatchInX > 1 && patchI < nPatchInX - 1) ? 1 : 0;
+    patch->m_LeftMargin = (nPatchInY > 1 && patchJ > 0) ? 1 : 0;
+    patch->m_RightMargin = (nPatchInY > 1 && patchJ < nPatchInY - 1) ? 1 : 0;
+    patch->m_NTotRow = patch->m_AboveMargin + patch->m_NRow + patch->m_BelowMargin;
+    patch->m_NTotCol = patch->m_LeftMargin + patch->m_NCol + patch->m_RightMargin;
+    patch->m_AbovePadding = 1;
+    patch->m_BelowPadding = 1;
+    patch->m_LeftPadding = 1;
+    patch->m_RightPadding = 1;
 }
 

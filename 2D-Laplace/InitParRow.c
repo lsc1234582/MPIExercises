@@ -116,8 +116,8 @@ int main(int argc, char**argv)
         exit(1);
     }
     /* Clean up */
-    FreeGridPatch(&horPatch, gridInit);
-    FreeGridPatch(&horPatch, gridSol);
+    FreeGrid(gridInit);
+    FreeGrid(gridSol);
     printf("Info: Exiting\n");
     MPI_Finalize();
 }

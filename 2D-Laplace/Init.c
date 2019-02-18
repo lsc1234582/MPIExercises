@@ -94,7 +94,7 @@ int main(int argc, char**argv)
         exit(1);
     }
     /* Clean up */
-    FreeGrid(params.m_NRow, gridInit);
-    FreeGrid(params.m_NRow, gridSol);
+    FreeGrid(gridInit);
+    FreeGrid(gridSol);
     printf("Info: Exiting\n");
 }
