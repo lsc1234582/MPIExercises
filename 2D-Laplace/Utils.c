@@ -562,9 +562,9 @@ static void IndToCoordColMajor(const int ind, const int nRow, const int nCol, in
 void GetGridPatchParams(const GridParams* params, const int size, const int rank, const int nPatchInX, const int nPatchInY, GridPatchParams* patch)
 {
     assert(size == nPatchInX * nPatchInY);
-    const int fullRowSize = ceil(params->m_NRow / nPatchInX);
+    const int fullRowSize = (int) ceil((double)params->m_NRow / (double)nPatchInX);
     const int partialRowSize = params->m_NRow % fullRowSize;
-    const int fullColSize = ceil(params->m_NCol / nPatchInY);
+    const int fullColSize = (int) ceil((double)params->m_NCol / (double)nPatchInY);
     const int partialColSize = params->m_NCol % fullColSize;
     const double dx = GetDx(params);
     const double dy = GetDy(params);
