@@ -72,9 +72,10 @@ int CreateGridParameterMPIStructDataType(MPI_Datatype* newType)
     return 0;
 }
 
-int CreateVertMarginMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype)
+int CreateColumnMarginElementMPIDataType(const GridPatchParams* patch, MPI_Datatype* newType)
 {
-    //TODO:
+    MPI_Type_create_resized(MPI_DOUBLE, 0, (MPI_Aint)(patch->m_NTotCol * sizeof(MPI_DOUBLE)), newType);
+    MPI_Type_commit(newType);
     return 1;
 }
 

@@ -105,8 +105,9 @@ int main(int argc, char**argv)
         y = horPatch.m_PatchY;
         for (size_t j = horPatch.m_LeftMargin; j < horPatch.m_NTotCol - horPatch.m_RightMargin; ++j)
         {
+            int globalJ = horPatch.m_PatchJ + j - horPatch.m_LeftMargin;
             gridSol[i][j] = func(x, y);
-            if (globalI > 0 && globalI < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
+            if (globalI > 0 && globalI < (params.m_NRow - 1) && globalJ > 0 && globalJ < (params.m_NCol - 1))
             {
                 gridInit[i][j] = 0.0;
             }

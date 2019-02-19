@@ -66,7 +66,7 @@ double GetDy(const GridParams* params);
 
 int CreateGridParameterMPIStructDataType(MPI_Datatype* newtype);
 
-int CreateVertMarginMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype);
+int CreateColumnMarginElementMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype);
 
 int ParseGridParameterFile(const char fileName[], GridParams* params);
 
