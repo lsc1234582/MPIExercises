@@ -433,9 +433,9 @@ int ReadGridPatch(const char fileName[], const GridPatchParams* patch, double** 
         printf("Error: Cannot open %s for reading\n", fileName);
         return 1;
     }
-    for (size_t i = patch->m_AboveMargin; i < patch->m_NRow; ++i)
+    for (size_t i = patch->m_AboveMargin; i < patch->m_NTotRow - patch->m_BelowMargin; ++i)
     {
-        for (size_t j = patch->m_LeftMargin; j < patch->m_NCol; ++j)
+        for (size_t j = patch->m_LeftMargin; j < patch->m_NTotCol - patch->m_RightMargin; ++j)
         {
             if(fscanf(fptr, "%*f %*f %lf", &grid1[i][j]) < 0)
             {
@@ -501,10 +501,10 @@ int WriteGridPatch(const char fileName[], const GridPatchParams* patch, double**
     double x = patch->m_PatchX;
     double y = patch->m_PatchY;
     x = patch->m_PatchX;
-    for (size_t i = patch->m_AboveMargin; i < patch->m_NRow; ++i)
+    for (size_t i = patch->m_AboveMargin; i < patch->m_NTotRow - patch->m_BelowMargin; ++i)
     {
         y = patch->m_PatchY;
-        for (size_t j = patch->m_LeftMargin; j < patch->m_NCol; ++j)
+        for (size_t j = patch->m_LeftMargin; j < patch->m_NTotCol - patch->m_RightMargin; ++j)
         {
             fprintf(fptr, "%f %f %f\n", x, y, grid[i][j]);
             y += patch->m_Dy;

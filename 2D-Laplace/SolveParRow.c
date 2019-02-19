@@ -55,6 +55,7 @@ int main(int argc, char**argv)
     GridPatchParams horPatch;
     GetGridPatchParams(&params, size, rank, size, 1, &horPatch);
     assert(horPatch.m_LeftMargin == 0 && horPatch.m_RightMargin == 0);
+    printf("Rank: %d, above_rank: %d, below_rank: %d\n", rank, horPatch.m_AboveRank, horPatch.m_BelowRank);
     if (horPatch.m_PatchI > 0)
     {
         printf("AbovemARGIN: %d %d %d\n", horPatch.m_AboveMargin, size, horPatch.m_PatchI);
@@ -104,14 +105,20 @@ int main(int argc, char**argv)
         /* Exchange boundary values */
         MPI_Request reqs[4];
         int numReqs = 0;
-        MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        if (horPatch.m_AboveRank != MPI_PROC_NULL)
+        {
+            MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        }
+        if (horPatch.m_BelowRank != MPI_PROC_NULL)
+        {
+            MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        }
         MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         maxDiff = 0.0;
         x = horPatch.m_PatchX;
@@ -137,8 +144,19 @@ int main(int argc, char**argv)
         tempGrid = NULL;
 
         /* Get the global MaxDiff */
-        MPI_Iallreduce(&maxDiff, &globalMaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD, &reqs[0]);
-        MPI_Waitall(1, reqs, MPI_STATUSES_IGNORE);
+        MPI_Allreduce(&maxDiff, &globalMaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        /*
+        if (iterations % 100 == 0)
+        {
+            char resultDatFileName[MAX_FILE_NAME_LENGTH];
+            sprintf(resultDatFileName, "laplace.MPI_%d_iter_%d.dat", rank, iterations);
+            if (WriteGridPatch(resultDatFileName, &horPatch, grid2))
+            {
+                exit(1);
+            }
+        }
+        */
+        //MPI_Barrier(MPI_COMM_WORLD);
         iterations++;
         //pprintf("MAX_DIFF: %f\n", maxDiff);
     } while (globalMaxDiff > params.m_Tolerance);

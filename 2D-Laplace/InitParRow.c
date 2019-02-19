@@ -82,11 +82,11 @@ int main(int argc, char**argv)
     }
     double x = horPatch.m_PatchX;
     double y = horPatch.m_PatchY;
-    for (size_t i = horPatch.m_AboveMargin; i < horPatch.m_NRow; ++i)
+    for (size_t i = horPatch.m_AboveMargin; i < horPatch.m_NTotRow - horPatch.m_BelowMargin; ++i)
     {
-        int globalI = horPatch.m_PatchI + i;
+        int globalI = horPatch.m_PatchI + i - horPatch.m_AboveMargin;
         y = horPatch.m_PatchY;
-        for (size_t j = horPatch.m_LeftMargin; j < horPatch.m_NCol; ++j)
+        for (size_t j = horPatch.m_LeftMargin; j < horPatch.m_NTotCol - horPatch.m_RightMargin; ++j)
         {
             gridSol[i][j] = func(x, y);
             if (globalI > 0 && globalI < (params.m_NRow - 1) && j > 0 && j < (params.m_NCol - 1))
