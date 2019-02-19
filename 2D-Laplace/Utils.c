@@ -170,6 +170,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams
     else if (axis == 1)
     {
         assert(param1->m_NRow == param2->m_NRow);
+        printf("param1->m_YMax: %f, param2->m_YMin: %f\n", param1->m_YMax, param2->m_YMin);
         assert(param1->m_YMax <= param2->m_YMin);
         // Assert that dy is uniform before concatenating
         double dyDiff = fabs(GetDy(param1) - GetDy(param2));
@@ -177,7 +178,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams
         {
             printf("Warning: significant dy difference: %lf\n", dyDiff);
         }
-        for (int i = 0; i < param1->m_NRow + param2->m_NRow; ++i)
+        for (int i = 0; i < param1->m_NRow; ++i)
         {
             memcpy(&resultGrid[i][0], &grid1[i][0], param1->m_NCol * sizeof(double));
             memcpy(&resultGrid[i][param1->m_NCol], &grid2[i][0], param2->m_NCol * sizeof(double));
@@ -238,19 +239,20 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
         double** prevIncompleteHorPatch = currHorPatch;
         for (int j = 0; j < numGridY; ++j)
         {
-            currPatchInx++;
             if (j > 0)
             {
                 GridParams tempHorPatchParam = currHorPatchParam;
                 tempHorPatchParam.m_NCol += params[currPatchInx].m_NCol;
                 double** tempHorPatch = AllocateInitGrid(tempHorPatchParam.m_NRow, tempHorPatchParam.m_NCol);
-                ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx + 1], &currHorPatchParam, &params[currPatchInx + 1], 1, tempHorPatch, &tempHorPatchParam);
+                printf("=======%d %d\n", i, j);
+                ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx], &currHorPatchParam, &params[currPatchInx], 1, tempHorPatch, &tempHorPatchParam);
                 currHorPatchParam = tempHorPatchParam;
                 currHorPatch = tempHorPatch;
                 FreeGrid(prevIncompleteHorPatch);
                 prevIncompleteHorPatchParam = currHorPatchParam;
                 prevIncompleteHorPatch = currHorPatch;
             }
+            currPatchInx++;
         }
         if (i == 0)
         {
@@ -262,6 +264,7 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
             GridParams tempFullPatchParam = currFullPatchParam;
             tempFullPatchParam.m_NRow += currHorPatchParam.m_NRow;
             double** tempFullPatch = AllocateInitGrid(tempFullPatchParam.m_NRow, tempFullPatchParam.m_NCol);
+            printf("=======%d \n", i);
             ConcatenateGrid((const double**)currFullPatch, (const double**)currHorPatch, &currFullPatchParam, &currHorPatchParam, 0, tempFullPatch, &tempFullPatchParam);
             currFullPatchParam = tempFullPatchParam;
             currFullPatch = tempFullPatch;

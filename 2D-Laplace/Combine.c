@@ -50,7 +50,7 @@ int main(int argc, char** argv)
             printf("Error: .dat file name too long\n");
             exit(1);
         }
-        strncpy(srcDatFileNames[i - 4], argv[i], strlen(argv[i]));
+        strncpy(srcDatFileNames[i - 4], argv[i], MAX_FILE_NAME_LENGTH);
         //printf("FILE: %s\n", srcDatFileNames[i - 4]);
     }
 
