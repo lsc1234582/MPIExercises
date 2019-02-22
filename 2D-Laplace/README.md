@@ -18,19 +18,19 @@ Run command:
 
 # Run
 ## Initialise boundary values
-Init and InitPar executibles are responsible for initialising boundary values.
-Both require a parameter file in the same format as "parameters.in".
+__Init__ and __InitPar__ executibles are responsible for initialising boundary values.
+Both require a __parameter file__ in the same format as "parameters.in".
 
-Init usage:
+### __Init__ usage:
 
 ``` ./Init <ParamFile> <FunctionSelection> ```
 
 Where \<ParamFile\> is the parameter file, and \<FunctionSelection\> is an integer from 0 to 3 (inclusive), which selects a
 function we'd like to solve.
 
-Init outputs one single "initial.dat" file and also outputs a "solution.dat" file with the analytical solution
+__Init__ outputs one single "initial.dat" file and also outputs a "solution.dat" file with the analytical solution
 
-InitPar usage:
+### __InitPar__ usage:
 
 ``` ./InitPar <NumPatchInX> <NumPatchInY> <ParamFile> <FunctionSelection> ```
 
@@ -39,50 +39,50 @@ local patches in both X and Y axes.
 \<ParamFile\> is the parameter file, and \<FunctionSelection\> is an integer from 0 to 3 (inclusive), which selects a
 function we'd like to solve.
   
-InitPar outputs \<NumPatchInX\> * \<NumPatchInY\> number of "initial.MPI_\<Rank\>.dat" and "solution.MPI_\<Rank\>.dat" files.
+__InitPar__ outputs \<NumPatchInX\> * \<NumPatchInY\> number of "initial.MPI_\<Rank\>.dat" and "solution.MPI_\<Rank\>.dat" files.
 
 **Note that InitPar must be run with \<NumPatchInX\> * \<NumPatchInY\> number of processes.**
 
 ## Solve 2D laplace
-Solve, SolveParRow and SolvePar solve the 2D laplace equations.
-Solve is a serial implementation; SolveParRow parallelises across the rows and SolvePar parallelises across both rows
+__Solve__, __SolveParRow__ and __SolvePar__ solve the 2D laplace equations.
+__Solve__ is a serial implementation; __SolveParRow__ parallelises across the rows and __SolvePar__ parallelises across both rows
 and columns.
 
-Solve usage:
+### __Solve__ usage:
 
 ``` ./Solve <ParamFile> ```
 
 Where \<ParamFile\> is the parameter file.
 
-Solve then takes "initial.dat" as input file and outputs "laplace.dat".
+__Solve__ then takes "initial.dat" as input file and outputs "laplace.dat".
 
-SolveParRow usage:
+### __SolveParRow__ usage:
 
 ``` ./SolveParRow <ParamFile> ```
 
 Where \<ParamFile\> is the parameter file.
-SolveParRow then takes "initial.MPI_\<Rank\>.dat" as input files and outputs "laplace.MPI_\<Rank\>.dat".
+__SolveParRow__ then takes "initial.MPI_\<Rank\>.dat" as input files and outputs "laplace.MPI_\<Rank\>.dat".
 
 **Note that SolveParRow must be run with the same number of processes as the number of local patches across the rows.
 This also means that the number of processes must be the same as the number of "initial.MPI_\<Rank\>.dat" files.**
 
-SolvePar usage:
+### __SolvePar__ usage:
 
 ``` ./SolvePar <NumPatchInX> <NumPatchInY> <ParamFile> ```
 
 Where \<NumPatchInX\> and \<NumPatchInY\> are integers (greater than 0), specifying how the global grid is partitioned into
 local patches in both X and Y axes. \<ParamFile\> is the parameter file.
 
-SolvePar then takes "initial.MPI_\<Rank\>.dat" as input files and outputs "laplace.MPI_\<Rank\>.dat".
+__SolvePar__ then takes "initial.MPI_\<Rank\>.dat" as input files and outputs "laplace.MPI_\<Rank\>.dat".
 
 **Note that SolveParRow must be run with the same number of processes as the number of local patches across the rows and
 columns.  This also means that the number of processes must be the same as the number of "initial.MPI_\<Rank\>.dat"
 file, and also be the same as \<NumPatchInX\> * \<NumPatchInY\>.**
 
 ## (Optional) Combine solutions together
-Combine combines multiple \*.dat files into a single \*.dat file.
+__Combine__ combines multiple \*.dat files into a single \*.dat file.
 
-Combine usage:
+### Combine usage:
 
 ``` ./Combine <NumPatchInX> <NumPatchInY> <DstDatFile> <SrcDatFile0>...<SrcDatFileN> ```
 
