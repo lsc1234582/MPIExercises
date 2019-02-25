@@ -72,6 +72,8 @@ int main(int argc, char**argv)
     if (grid2 == NULL)
     {
         pprintf("Error: Error in allocating grid\n");
+        /* Clean up */
+        FreeGrid(grid1);
         exit(1);
     }
 
@@ -80,6 +82,9 @@ int main(int argc, char**argv)
     snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", initialDatBaseFileName);
     if (ReadGrid(initialDatFileName, &params, grid1, grid2))
     {
+        /* Clean up */
+        FreeGrid(grid1);
+        FreeGrid(grid2);
         exit(1);
     }
 
@@ -121,14 +126,11 @@ int main(int argc, char**argv)
     /* Write results */
     char resultDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(resultDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", resultDatBaseFileName);
-    if (WriteGrid(resultDatFileName, &params, grid2))
-    {
-        exit(1);
-    }
+    WriteGrid(resultDatFileName, &params, grid2);
 
     /* Clean up */
-    FreeGrid(grid2);
     FreeGrid(grid1);
+    FreeGrid(grid2);
 
     pprintf("Info: Exiting\n");
 }

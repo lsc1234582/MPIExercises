@@ -114,6 +114,8 @@ int main(int argc, char**argv)
     double** gridSol = AllocateInitGridPatch(&horPatch);
     if (gridSol == NULL)
     {
+        /* Clean up */
+        FreeGrid(gridInit);
         printf("Error: Error in allocating grid\n");
         exit(1);
     }
@@ -145,14 +147,9 @@ int main(int argc, char**argv)
     char solutionDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(solutionDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", solutionDatBaseFileName, rank);
 
-    if (WriteGridPatch(initialDatFileName, &horPatch, gridInit))
-    {
-        exit(1);
-    }
-    if (WriteGridPatch(solutionDatFileName, &horPatch, gridSol))
-    {
-        exit(1);
-    }
+    WriteGridPatch(initialDatFileName, &horPatch, gridInit);
+    WriteGridPatch(solutionDatFileName, &horPatch, gridSol);
+
     /* Clean up */
     FreeGrid(gridInit);
     FreeGrid(gridSol);

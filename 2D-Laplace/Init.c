@@ -81,6 +81,8 @@ int main(int argc, char**argv)
     if (gridSol == NULL)
     {
         printf("Error: Error in allocating grid\n");
+        /* Clean up */
+        FreeGrid(gridInit);
         exit(1);
     }
     double x = params.m_XMin;
@@ -109,14 +111,8 @@ int main(int argc, char**argv)
     char solutionDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(solutionDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", solutionDatBaseFileName);
 
-    if (WriteGrid(initialDatFileName, &params, gridInit))
-    {
-        exit(1);
-    }
-    if (WriteGrid(solutionDatFileName, &params, gridSol))
-    {
-        exit(1);
-    }
+    WriteGrid(initialDatFileName, &params, gridInit);
+    WriteGrid(solutionDatFileName, &params, gridSol);
     /* Clean up */
     FreeGrid(gridInit);
     FreeGrid(gridSol);

@@ -1,3 +1,6 @@
+/* *
+ * Combines multiple gnuplot .dat files into a single .dat file.
+ */
 #include "Utils.h"
 
 #include <stdlib.h>
@@ -11,6 +14,7 @@ void PrintHelp(void)
 
 int main(int argc, char** argv)
 {
+    /* Parse command-line artguments */
     if (argc != 5)
     {
         PrintHelp();
@@ -54,7 +58,15 @@ int main(int argc, char** argv)
         snprintf(srcDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", srcDatFileBaseName, i);
         ReadGridParams(srcDatFileName, &params[i]);
         grids[i] = AllocateInitGrid(params[i].m_NRow, params[i].m_NCol);
-        ReadGrid(srcDatFileName, &params[i], grids[i], NULL);
+        if (ReadGrid(srcDatFileName, &params[i], grids[i], NULL))
+        {
+            /* Clean up */
+            for (int j = 0; j <= i; ++j)
+            {
+                FreeGrid(grids[j]);
+            }
+            exit(1);
+        }
     }
 
     int totalNumRow = 0;
@@ -79,8 +91,9 @@ int main(int argc, char** argv)
     /* Clean up */
     for (int i = 0; i < numPatches; ++i)
     {
-        free(grids[i]);
+        FreeGrid(grids[i]);
     }
-    free(dstGrid);
+    FreeGrid(dstGrid);
+    printf("Info: Exiting\n");
     return 0;
 }

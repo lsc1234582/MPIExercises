@@ -130,6 +130,8 @@ int main(int argc, char**argv)
     if (grid2 == NULL)
     {
         pprintf("Error: Error in allocating grid\n");
+        /* Clean up */
+        FreeGrid(grid1);
         exit(1);
     }
 
@@ -138,6 +140,9 @@ int main(int argc, char**argv)
     snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", initialDatBaseFileName, rank);
     if (ReadGridPatch(initialDatFileName, &patchParam, grid1, grid2))
     {
+        /* Clean up */
+        FreeGrid(grid1);
+        FreeGrid(grid2);
         exit(1);
     }
 
@@ -222,14 +227,11 @@ int main(int argc, char**argv)
     /* Write results */
     char resultDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(resultDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", resultDatBaseFileName, rank);
-    if (WriteGridPatch(resultDatFileName, &patchParam, grid2))
-    {
-        exit(1);
-    }
+    WriteGridPatch(resultDatFileName, &patchParam, grid2);
 
     /* Clean up */
-    FreeGrid(grid2);
     FreeGrid(grid1);
+    FreeGrid(grid2);
 
     pprintf("Info: Exiting\n");
     MPI_Finalize();
