@@ -1,3 +1,6 @@
+/* *
+ * Solve laplace equation (parallel across rows and columns).
+ */
 #include "Utils.h"
 
 #include <mpi.h>
@@ -34,8 +37,8 @@ int main(int argc, char**argv)
 
     if (rank == MASTER_RANK)
     {
-        printf("Info: Parsing args\n");
         /* Parse args */
+        printf("Info: Parsing args\n");
         if (argc < 4 || argc > 6)
         {
             PrintHelp();
@@ -91,12 +94,14 @@ int main(int argc, char**argv)
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
     }
+    /* Broadcast common parameters to all processes */
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInX, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInY, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(resultDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(initialDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
 
+    /* Allocate local grid patch */
     GridPatchParams patchParam;
     GetGridPatchParams(&params, size, rank, numPatchInX, numPatchInY, &patchParam);
     MPI_Datatype ColumnMarginElementT;
@@ -119,7 +124,7 @@ int main(int argc, char**argv)
         assert(patchParam.m_RightMargin == 1);
     }
 
-    pprintf("Info: Solving 2d Laplace with parallel Jacobi iteration method\n");
+    /* Read initial grid values */
     double** grid1 = AllocateInitGridPatch(&patchParam);
     if (grid1 == NULL)
     {
@@ -135,7 +140,6 @@ int main(int argc, char**argv)
         exit(1);
     }
 
-    /* Parse initial.MPI_<Rank>.dat */
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", initialDatBaseFileName, rank);
     if (ReadGridPatch(initialDatFileName, &patchParam, grid1, grid2))
@@ -148,7 +152,6 @@ int main(int argc, char**argv)
 
     /* Solve boundary value problem with Jacobi iteration method */
     pprintf("Info: Solving...\n");
-
     const double dx = patchParam.m_Dx;
     const double dy = patchParam.m_Dy;
     double x = patchParam.m_PatchX;

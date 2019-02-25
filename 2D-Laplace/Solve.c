@@ -1,3 +1,6 @@
+/* *
+ * Solve laplace equation serially.
+ */
 #include "Utils.h"
 
 #include <mpi.h>
@@ -15,8 +18,9 @@ int main(int argc, char**argv)
 {
     char resultDatBaseFileName[MAX_FILE_NAME_LENGTH] = "laplace";
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
-    pprintf("Info: Parsing args\n");
+
     /* Parse args */
+    pprintf("Info: Parsing args\n");
     if (argc < 2 || argc > 4)
     {
         PrintHelp();
@@ -58,10 +62,7 @@ int main(int argc, char**argv)
     pprintf("Info: Parameters:\n");
     PrintGridParameters(&params);
 
-    /* Initialise grid by reading "initial.dat"
-     * Set boundary values to those set by the analitycal solution (initial.dat), and all the interior values to zeros.
-     */
-    pprintf("Info: Solving 2d Laplace with serial Jacobi iteration method\n");
+    /* Read initial grid values */
     double** grid1 = AllocateInitGrid(params.m_NRow, params.m_NCol);
     if (grid1 == NULL)
     {
@@ -77,7 +78,6 @@ int main(int argc, char**argv)
         exit(1);
     }
 
-    /* Parse initial.dat */
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", initialDatBaseFileName);
     if (ReadGrid(initialDatFileName, &params, grid1, grid2))

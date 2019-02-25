@@ -1,3 +1,6 @@
+/* *
+ * Initialise boundary values serially.
+ */
 #include "Utils.h"
 
 #include <stdlib.h>

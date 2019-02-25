@@ -1,3 +1,6 @@
+/* *
+ * Solve laplace equation (parallel across rows).
+ */
 #include "Utils.h"
 
 #include <mpi.h>
@@ -29,8 +32,8 @@ int main(int argc, char**argv)
 
     if (rank == MASTER_RANK)
     {
-        printf("Info: Parsing args\n");
         /* Parse args */
+        printf("Info: Parsing args\n");
         if (argc < 2 || argc > 4)
         {
             PrintHelp();
@@ -71,10 +74,12 @@ int main(int argc, char**argv)
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
     }
+    /* Broadcast common parameters to all processes */
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(resultDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(initialDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
 
+    /* Allocate local grid patch */
     GridPatchParams horPatch;
     GetGridPatchParams(&params, size, rank, size, 1, &horPatch);
     assert(horPatch.m_LeftMargin == 0 && horPatch.m_RightMargin == 0);
@@ -90,7 +95,7 @@ int main(int argc, char**argv)
         assert(horPatch.m_BelowMargin == 1);
     }
 
-    pprintf("Info: Solving 2d Laplace with row parallel Jacobi iteration method\n");
+    /* Read initial grid values */
     double** grid1 = AllocateInitGridPatch(&horPatch);
     if (grid1 == NULL)
     {
@@ -106,7 +111,6 @@ int main(int argc, char**argv)
         exit(1);
     }
 
-    /* Parse initial.MPI_<Rank>.dat */
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
     snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", initialDatBaseFileName, rank);
     if (ReadGridPatch(initialDatFileName, &horPatch, grid1, grid2))
@@ -133,20 +137,14 @@ int main(int argc, char**argv)
         /* Exchange boundary values */
         MPI_Request reqs[4];
         int numReqs = 0;
-        if (horPatch.m_AboveRank != MPI_PROC_NULL)
-        {
-            MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-            MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        }
-        if (horPatch.m_BelowRank != MPI_PROC_NULL)
-        {
-            MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-            MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        }
+        MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         maxDiff = 0.0;
         x = horPatch.m_PatchX;

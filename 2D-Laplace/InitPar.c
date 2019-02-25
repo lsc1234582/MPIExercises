@@ -1,3 +1,6 @@
+/* *
+ * Initialise boundary values in parallel.
+ */
 #include "Utils.h"
 
 #include <mpi.h>
