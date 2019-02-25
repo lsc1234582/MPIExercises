@@ -3,5 +3,5 @@ XMax: 1.0
 YMin: -1.0
 YMax: 1.0
 NRow: 128
-NCol: 256
+NCol: 128
 Tolerance: 0.0001

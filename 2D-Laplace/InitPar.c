@@ -30,7 +30,10 @@ int main(int argc, char**argv)
     GridParams params;
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
     char solutionDatBaseFileName[MAX_FILE_NAME_LENGTH] = "solution";
+
     /* Parse args */
+    pprintf("Info: Command ");
+    PrintCLArgs(argc, argv);
     if (rank == MASTER_RANK)
     {
         printf("Info: Parsing args\n");
@@ -94,6 +97,7 @@ int main(int argc, char**argv)
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
         printf("Info: Function selection: %d\n", funcSelection);
+        printf("Info: Size: %d\n", size);
     }
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&funcSelection, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);

@@ -20,6 +20,8 @@ int main(int argc, char**argv)
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
 
     /* Parse args */
+    pprintf("Info: Command ");
+    PrintCLArgs(argc, argv);
     pprintf("Info: Parsing args\n");
     if (argc < 2 || argc > 4)
     {

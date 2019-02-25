@@ -16,6 +16,8 @@ void PrintHelp(void)
 int main(int argc, char**argv)
 {
     /* Parse args */
+    pprintf("Info: Command ");
+    PrintCLArgs(argc, argv);
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
     char solutionDatBaseFileName[MAX_FILE_NAME_LENGTH] = "solution";
     printf("Info: Parsing args\n");

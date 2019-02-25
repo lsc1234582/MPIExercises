@@ -35,6 +35,8 @@ int main(int argc, char**argv)
     char resultDatBaseFileName[MAX_FILE_NAME_LENGTH] = "laplace";
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
 
+    pprintf("Info: Command ");
+    PrintCLArgs(argc, argv);
     if (rank == MASTER_RANK)
     {
         /* Parse args */
@@ -93,6 +95,7 @@ int main(int argc, char**argv)
 
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
+        printf("Info: Size: %d\n", size);
     }
     /* Broadcast common parameters to all processes */
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);

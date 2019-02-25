@@ -600,3 +600,11 @@ void GetGridPatchParams(const GridParams* params, const int size, const int rank
     patch->m_RightPadding = 1;
 }
 
+void PrintCLArgs(int argc, char** argv)
+{
+    for (int i = 0; i < argc; ++i)
+    {
+        pprintf("%s ", argv[i]);
+    }
+    pprintf("\n");
+}

@@ -15,6 +15,8 @@ void PrintHelp(void)
 int main(int argc, char** argv)
 {
     /* Parse command-line artguments */
+    pprintf("Info: Command ");
+    PrintCLArgs(argc, argv);
     if (argc != 5)
     {
         PrintHelp();

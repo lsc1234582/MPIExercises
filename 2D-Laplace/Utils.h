@@ -122,6 +122,9 @@ void PrintGridParameters(const GridParams* params);
 /* Print Grid */
 void PrintGrid(const GridParams* params, const double** grid);
 
+/* Print command line arguments */
+void PrintCLArgs(int argc, char** argv);
+
 /* Parallel printf */
 int pprintf(const char* fmt, ...);
 
