@@ -171,7 +171,7 @@ int ConcatenateGrid(const double** grid1, const double** grid2, const GridParams
     else if (axis == 1)
     {
         assert(param1->m_NRow == param2->m_NRow);
-        printf("param1->m_YMax: %f, param2->m_YMin: %f\n", param1->m_YMax, param2->m_YMin);
+        //printf("param1->m_YMax: %f, param2->m_YMin: %f\n", param1->m_YMax, param2->m_YMin);
         assert(param1->m_YMax <= param2->m_YMin);
         // Assert that dy is uniform before concatenating
         double dyDiff = fabs(GetDy(param1) - GetDy(param2));
@@ -245,7 +245,6 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
                 GridParams tempHorPatchParam = currHorPatchParam;
                 tempHorPatchParam.m_NCol += params[currPatchInx].m_NCol;
                 double** tempHorPatch = AllocateInitGrid(tempHorPatchParam.m_NRow, tempHorPatchParam.m_NCol);
-                printf("=======%d %d\n", i, j);
                 ConcatenateGrid((const double**)currHorPatch, grids[currPatchInx], &currHorPatchParam, &params[currPatchInx], 1, tempHorPatch, &tempHorPatchParam);
                 currHorPatchParam = tempHorPatchParam;
                 currHorPatch = tempHorPatch;
@@ -265,7 +264,6 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
             GridParams tempFullPatchParam = currFullPatchParam;
             tempFullPatchParam.m_NRow += currHorPatchParam.m_NRow;
             double** tempFullPatch = AllocateInitGrid(tempFullPatchParam.m_NRow, tempFullPatchParam.m_NCol);
-            printf("=======%d \n", i);
             ConcatenateGrid((const double**)currFullPatch, (const double**)currHorPatch, &currFullPatchParam, &currHorPatchParam, 0, tempFullPatch, &tempFullPatchParam);
             currFullPatchParam = tempFullPatchParam;
             currFullPatch = tempFullPatch;

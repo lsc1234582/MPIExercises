@@ -6,32 +6,53 @@
 
 void PrintHelp(void)
 {
-    printf("Usage: Init <ParamsFile> <FunctionSelection>\n\
+    printf("Usage: Init <ParamsFile> <FunctionSelection> [InitDatBaseFileName [SolDatBaseFileName]]\n\
             <FunctionSelect>: [0..3]\n");
 }
 
 int main(int argc, char**argv)
 {
     /* Parse args */
+    char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
+    char solutionDatBaseFileName[MAX_FILE_NAME_LENGTH] = "solution";
     printf("Info: Parsing args\n");
-    if (argc != 3)
+    if (argc < 3 || argc > 5)
     {
         PrintHelp();
         exit(1);
     }
     char paramsFileName[MAX_FILE_NAME_LENGTH];
-    if(strlen(argv[1]) > MAX_FILE_NAME_LENGTH)
+    if(strlen(argv[1]) > MAX_FILE_NAME_LENGTH - 1)
     {
         printf("Error: Parameter file name too long\n");
         exit(1);
     }
-    strncpy(paramsFileName, argv[1], strlen(argv[1]));
+    strncpy(paramsFileName, argv[1], MAX_FILE_NAME_LENGTH);
     char* endChr;
     int funcSelection = strtol(argv[2], &endChr, 10);
     if (endChr == argv[2] || funcSelection > 3 || funcSelection < 0)
     {
         PrintHelp();
         exit(1);
+    }
+    if (argc > 3)
+    {
+        if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH - 1)
+        {
+            printf("Error: Parameter file name too long\n");
+            exit(1);
+        }
+        strncpy(initialDatBaseFileName, argv[3], MAX_FILE_NAME_LENGTH);
+    }
+
+    if (argc > 4)
+    {
+        if(strlen(argv[4]) > MAX_FILE_NAME_LENGTH - 1)
+        {
+            printf("Error: Parameter file name too long\n");
+            exit(1);
+        }
+        strncpy(solutionDatBaseFileName, argv[4], MAX_FILE_NAME_LENGTH);
     }
 
     GridParams params;
@@ -49,9 +70,7 @@ int main(int argc, char**argv)
 
     double (*func)(double, double) = funcs[funcSelection];
 
-    printf("Info: Writing initial bounadry values and analytical solutions to initial.dat and solution.dat\n");
-    /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
-     * 'solution.dat')) */
+    /* Produce both initial boundaries, and analytical solutions */
     double** gridInit = AllocateInitGrid(params.m_NRow, params.m_NCol);
     if (gridInit == NULL)
     {
@@ -85,11 +104,16 @@ int main(int argc, char**argv)
         x += dx;
     }
 
-    if (WriteGrid("initial.dat", &params, gridInit))
+    char initialDatFileName[MAX_FILE_NAME_LENGTH];
+    snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", initialDatBaseFileName);
+    char solutionDatFileName[MAX_FILE_NAME_LENGTH];
+    snprintf(solutionDatFileName, MAX_FILE_NAME_LENGTH, "%s.dat", solutionDatBaseFileName);
+
+    if (WriteGrid(initialDatFileName, &params, gridInit))
     {
         exit(1);
     }
-    if (WriteGrid("solution.dat", &params, gridSol))
+    if (WriteGrid(solutionDatFileName, &params, gridSol))
     {
         exit(1);
     }

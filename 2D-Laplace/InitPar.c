@@ -9,7 +9,7 @@
 
 void PrintHelp(void)
 {
-    printf("Usage: InitParRow <NumPatchInX> <NumPatchInY> <ParamsFile> <FunctionSelection>\n\
+    printf("Usage: InitPar <NumPatchInX> <NumPatchInY> <ParamsFile> <FunctionSelection> [InitDatBaseFileName [SolDatBaseFileName]]\n\
             <FunctionSelect>: [0..3]\n");
 }
 
@@ -25,22 +25,24 @@ int main(int argc, char**argv)
     MPI_Datatype ParamsMPIType;
     CreateGridParameterMPIStructDataType(&ParamsMPIType);
     GridParams params;
+    char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
+    char solutionDatBaseFileName[MAX_FILE_NAME_LENGTH] = "solution";
     /* Parse args */
     if (rank == MASTER_RANK)
     {
         printf("Info: Parsing args\n");
-        if (argc != 5)
+        if (argc < 5 || argc > 7)
         {
             PrintHelp();
             exit(1);
         }
         char paramsFileName[MAX_FILE_NAME_LENGTH];
-        if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH)
+        if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH - 1)
         {
             printf("Error: Parameter file name too long\n");
             exit(1);
         }
-        strncpy(paramsFileName, argv[3], strlen(argv[3]));
+        strncpy(paramsFileName, argv[3], MAX_FILE_NAME_LENGTH);
         char* endChr;
         funcSelection = strtol(argv[4], &endChr, 10);
         if (endChr == argv[4] || funcSelection > 3 || funcSelection < 0)
@@ -67,6 +69,25 @@ int main(int argc, char**argv)
             printf("Error: Error in reading parameter file: %s\n", paramsFileName);
             exit(1);
         }
+        if (argc > 5)
+        {
+            if(strlen(argv[5]) > MAX_FILE_NAME_LENGTH - 1)
+            {
+                printf("Error: Parameter file name too long\n");
+                exit(1);
+            }
+            strncpy(initialDatBaseFileName, argv[5], MAX_FILE_NAME_LENGTH);
+        }
+
+        if (argc > 6)
+        {
+            if(strlen(argv[6]) > MAX_FILE_NAME_LENGTH - 1)
+            {
+                printf("Error: Parameter file name too long\n");
+                exit(1);
+            }
+            strncpy(solutionDatBaseFileName, argv[6], MAX_FILE_NAME_LENGTH);
+        }
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
         printf("Info: Function selection: %d\n", funcSelection);
@@ -75,16 +96,15 @@ int main(int argc, char**argv)
     MPI_Bcast(&funcSelection, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInX, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInY, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
+    MPI_Bcast(initialDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
+    MPI_Bcast(solutionDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
 
     GridPatchParams horPatch;
     GetGridPatchParams(&params, size, rank, numPatchInX, numPatchInY, &horPatch);
 
     double (*func)(double, double) = funcs[funcSelection];
 
-    printf("Info: Writing initial bounadry values and analytical solutions to initial.MPI_%d.dat and solution.MPI_%d.dat\n",
-            rank, rank);
-    /* Produce both initial boundaries (writing to 'initial.dat'), and analytical solutions (writing to
-     * 'solution.dat')) */
+    /* Produce both initial boundaries, and analytical solutions */
     double** gridInit = AllocateInitGridPatch(&horPatch);
     if (gridInit == NULL)
     {
@@ -121,9 +141,9 @@ int main(int argc, char**argv)
     }
 
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
-    sprintf(initialDatFileName, "initial.MPI_%d.dat", rank);
+    snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", initialDatBaseFileName, rank);
     char solutionDatFileName[MAX_FILE_NAME_LENGTH];
-    sprintf(solutionDatFileName, "solution.MPI_%d.dat", rank);
+    snprintf(solutionDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", solutionDatBaseFileName, rank);
 
     if (WriteGridPatch(initialDatFileName, &horPatch, gridInit))
     {

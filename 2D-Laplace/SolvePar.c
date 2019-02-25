@@ -14,7 +14,7 @@
 
 void PrintHelp(void)
 {
-    printf("Usage: Solve <NumPatchInX> <NumPatchInY> <ParamsFile>\n");
+    printf("Usage: SolvePar <NumPatchInX> <NumPatchInY> <ParamsFile> [ResultDatBaseFileName [InitialDatBaseFileName]] \n");
 }
 
 int main(int argc, char**argv)
@@ -29,12 +29,14 @@ int main(int argc, char**argv)
     CreateGridParameterMPIStructDataType(&ParamsMPIType);
     GridParams params;
 
+    char resultDatBaseFileName[MAX_FILE_NAME_LENGTH] = "laplace";
+    char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";
 
     if (rank == MASTER_RANK)
     {
         printf("Info: Parsing args\n");
         /* Parse args */
-        if (argc != 4)
+        if (argc < 4 || argc > 6)
         {
             PrintHelp();
             exit(1);
@@ -53,13 +55,33 @@ int main(int argc, char**argv)
             exit(1);
         }
 
-        if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH)
+        if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH - 1)
         {
             printf("Error: Parameter file name too long\n");
             exit(1);
         }
-        char paramsFileName[strlen(argv[3])];
-        strncpy(paramsFileName, argv[3], strlen(argv[3]));
+        char paramsFileName[MAX_FILE_NAME_LENGTH];
+        strncpy(paramsFileName, argv[3], MAX_FILE_NAME_LENGTH);
+
+        if (argc > 4)
+        {
+            if(strlen(argv[4]) > MAX_FILE_NAME_LENGTH - 1)
+            {
+                printf("Error: Parameter file name too long\n");
+                exit(1);
+            }
+            strncpy(resultDatBaseFileName, argv[4], MAX_FILE_NAME_LENGTH);
+        }
+
+        if (argc > 5)
+        {
+            if(strlen(argv[5]) > MAX_FILE_NAME_LENGTH - 1)
+            {
+                printf("Error: Parameter file name too long\n");
+                exit(1);
+            }
+            strncpy(initialDatBaseFileName, argv[5], MAX_FILE_NAME_LENGTH);
+        }
 
         if (ParseGridParameterFile(paramsFileName, &params))
         {
@@ -72,6 +94,8 @@ int main(int argc, char**argv)
     MPI_Bcast(&params, 1, ParamsMPIType, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInX, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
     MPI_Bcast(&numPatchInY, 1, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
+    MPI_Bcast(resultDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
+    MPI_Bcast(initialDatBaseFileName, MAX_FILE_NAME_LENGTH, MPI_CHAR, MASTER_RANK, MPI_COMM_WORLD);
 
     GridPatchParams patchParam;
     GetGridPatchParams(&params, size, rank, numPatchInX, numPatchInY, &patchParam);
@@ -80,22 +104,18 @@ int main(int argc, char**argv)
     printf("Rank: %d, above_rank: %d, below_rank: %d\n", rank, patchParam.m_AboveRank, patchParam.m_BelowRank);
     if (patchParam.m_PatchI > 0)
     {
-        printf("AbovemARGIN: %d %d %d\n", patchParam.m_AboveMargin, size, patchParam.m_PatchI);
         assert(patchParam.m_AboveMargin == 1);
     }
-    if (patchParam.m_PatchI < size - 1)
+    if (patchParam.m_PatchI < numPatchInX - 1)
     {
-        printf("BelowmARGIN: %d", patchParam.m_BelowMargin);
         assert(patchParam.m_BelowMargin == 1);
     }
     if (patchParam.m_PatchJ > 0)
     {
-        printf("AbovemARGIN: %d %d %d\n", patchParam.m_AboveMargin, size, patchParam.m_PatchI);
         assert(patchParam.m_LeftMargin == 1);
     }
-    if (patchParam.m_PatchJ < size - 1)
+    if (patchParam.m_PatchJ < numPatchInY - 1)
     {
-        printf("BelowmARGIN: %d", patchParam.m_BelowMargin);
         assert(patchParam.m_RightMargin == 1);
     }
 
@@ -115,7 +135,7 @@ int main(int argc, char**argv)
 
     /* Parse initial.MPI_<Rank>.dat */
     char initialDatFileName[MAX_FILE_NAME_LENGTH];
-    sprintf(initialDatFileName, "initial.MPI_%d.dat", rank);
+    snprintf(initialDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", initialDatBaseFileName, rank);
     if (ReadGridPatch(initialDatFileName, &patchParam, grid1, grid2))
     {
         exit(1);
@@ -201,7 +221,7 @@ int main(int argc, char**argv)
 
     /* Write results */
     char resultDatFileName[MAX_FILE_NAME_LENGTH];
-    sprintf(resultDatFileName, "laplace.MPI_%d.dat", rank);
+    snprintf(resultDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", resultDatBaseFileName, rank);
     if (WriteGridPatch(resultDatFileName, &patchParam, grid2))
     {
         exit(1);

@@ -6,12 +6,12 @@
 
 void PrintHelp(void)
 {
-    printf("Usage: Combine <NumPatchInX> <NumPatchInY> <DstDatFile> <SrcDatFile0>...\n");
+    printf("Usage: Combine <NumPatchInX> <NumPatchInY> <DstDatFile> <SrcDatBaseFileName>\n");
 }
 
 int main(int argc, char** argv)
 {
-    if (argc < 5)
+    if (argc != 5)
     {
         PrintHelp();
         exit(1);
@@ -30,38 +30,31 @@ int main(int argc, char** argv)
         exit(1);
     }
     int numPatches = numPatchInX * numPatchInY;
-    if (numPatches != argc - 4)
-    {
-        printf("Error: Number of patches mismatches number of provided .dat files\n");
-        exit(1);
-    }
     char dstDatFileName[MAX_FILE_NAME_LENGTH];
-    if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH)
+    if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH - 1)
     {
         printf("Error: .dat file name too long\n");
         exit(1);
     }
-    strncpy(dstDatFileName, argv[3], strlen(argv[3]));
-    char srcDatFileNames[numPatches][MAX_FILE_NAME_LENGTH];
-    for (int i = 4; i < numPatches + 4; ++i)
+    strncpy(dstDatFileName, argv[3], MAX_FILE_NAME_LENGTH);
+    char srcDatFileBaseName[MAX_FILE_NAME_LENGTH];
+    if(strlen(argv[4]) > MAX_FILE_NAME_LENGTH - 1)
     {
-        if(strlen(argv[i]) > MAX_FILE_NAME_LENGTH)
-        {
-            printf("Error: .dat file name too long\n");
-            exit(1);
-        }
-        strncpy(srcDatFileNames[i - 4], argv[i], MAX_FILE_NAME_LENGTH);
-        //printf("FILE: %s\n", srcDatFileNames[i - 4]);
+        printf("Error: .dat file name too long\n");
+        exit(1);
     }
+    strncpy(srcDatFileBaseName, argv[4], MAX_FILE_NAME_LENGTH);
 
     /* Read source grid parameters and source grid data */
     GridParams params[numPatches];
     double** grids[numPatches];
     for (int i = 0; i < numPatches; ++i)
     {
-        ReadGridParams(srcDatFileNames[i], &params[i]);
+        char srcDatFileName[MAX_FILE_NAME_LENGTH];
+        snprintf(srcDatFileName, MAX_FILE_NAME_LENGTH, "%s.MPI_%d.dat", srcDatFileBaseName, i);
+        ReadGridParams(srcDatFileName, &params[i]);
         grids[i] = AllocateInitGrid(params[i].m_NRow, params[i].m_NCol);
-        ReadGrid(srcDatFileNames[i], &params[i], grids[i], NULL);
+        ReadGrid(srcDatFileName, &params[i], grids[i], NULL);
     }
 
     int totalNumRow = 0;
