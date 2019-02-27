@@ -94,8 +94,10 @@ int main(int argc, char**argv)
             }
             strncpy(solutionDatBaseFileName, argv[6], MAX_FILE_NAME_LENGTH);
         }
+#ifdef DEBUG
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
+#endif
         printf("Info: Function selection: %d\n", funcSelection);
         printf("Info: Size: %d\n", size);
     }

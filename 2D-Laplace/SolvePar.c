@@ -93,8 +93,10 @@ int main(int argc, char**argv)
             exit(1);
         }
 
-        printf("Info: Parameters:\n");
+#ifdef DEBUG
+        printf("Debug: Parameters:\n");
         PrintGridParameters(&params);
+#endif
         printf("Info: Size: %d\n", size);
     }
     /* Broadcast common parameters to all processes */
@@ -109,7 +111,9 @@ int main(int argc, char**argv)
     GetGridPatchParams(&params, size, rank, numPatchInX, numPatchInY, &patchParam);
     MPI_Datatype ColumnMarginElementT;
     CreateColumnMarginElementMPIDataType(&patchParam, &ColumnMarginElementT);
+#ifdef DEBUG
     printf("Rank: %d, above_rank: %d, below_rank: %d\n", rank, patchParam.m_AboveRank, patchParam.m_BelowRank);
+#endif
     if (patchParam.m_PatchI > 0)
     {
         assert(patchParam.m_AboveMargin == 1);
@@ -195,11 +199,9 @@ int main(int argc, char**argv)
                 double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
                 grid2[i][j] = term1 * term2;
-                //pprintf("%f\t", grid2[i][j]);
                 double diff = fabs(grid2[i][j] - grid1[i][j]);
                 maxDiff = diff > maxDiff ? diff : maxDiff;
             }
-            //pprintf("\n");
         }
         tempGrid = grid2;
         grid2 = grid1;
@@ -208,17 +210,6 @@ int main(int argc, char**argv)
 
         /* Get the global MaxDiff */
         MPI_Allreduce(&maxDiff, &globalMaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        /*
-        if (iterations % 100 == 0)
-        {
-            char resultDatFileName[MAX_FILE_NAME_LENGTH];
-            sprintf(resultDatFileName, "laplace.MPI_%d_iter_%d.dat", rank, iterations);
-            if (WriteGridPatch(resultDatFileName, &patchParam, grid2))
-            {
-                exit(1);
-            }
-        }
-        */
         //MPI_Barrier(MPI_COMM_WORLD);
         iterations++;
         //pprintf("MAX_DIFF: %f\n", maxDiff);

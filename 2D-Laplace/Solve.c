@@ -61,8 +61,10 @@ int main(int argc, char**argv)
         pprintf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
-    pprintf("Info: Parameters:\n");
+#ifdef DEBUG
+    pprintf("Debug: Parameters:\n");
     PrintGridParameters(&params);
+#endif
 
     /* Read initial grid values */
     double** grid1 = AllocateInitGrid(params.m_NRow, params.m_NCol);

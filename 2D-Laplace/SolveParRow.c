@@ -73,8 +73,10 @@ int main(int argc, char**argv)
         {
             exit(1);
         }
-        printf("Info: Parameters:\n");
+#ifdef DEBUG
+        printf("Debug: Parameters:\n");
         PrintGridParameters(&params);
+#endif
         printf("Info: Size: %d\n", size);
     }
     /* Broadcast common parameters to all processes */
@@ -86,15 +88,15 @@ int main(int argc, char**argv)
     GridPatchParams horPatch;
     GetGridPatchParams(&params, size, rank, size, 1, &horPatch);
     assert(horPatch.m_LeftMargin == 0 && horPatch.m_RightMargin == 0);
+#ifdef DEBUG
     printf("Rank: %d, above_rank: %d, below_rank: %d\n", rank, horPatch.m_AboveRank, horPatch.m_BelowRank);
+#endif
     if (horPatch.m_PatchI > 0)
     {
-        printf("AbovemARGIN: %d %d %d\n", horPatch.m_AboveMargin, size, horPatch.m_PatchI);
         assert(horPatch.m_AboveMargin == 1);
     }
     if (horPatch.m_PatchI < size - 1)
     {
-        printf("BelowmARGIN: %d", horPatch.m_BelowMargin);
         assert(horPatch.m_BelowMargin == 1);
     }
 
@@ -174,17 +176,6 @@ int main(int argc, char**argv)
 
         /* Get the global MaxDiff */
         MPI_Allreduce(&maxDiff, &globalMaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        /*
-        if (iterations % 100 == 0)
-        {
-            char resultDatFileName[MAX_FILE_NAME_LENGTH];
-            sprintf(resultDatFileName, "laplace.MPI_%d_iter_%d.dat", rank, iterations);
-            if (WriteGridPatch(resultDatFileName, &horPatch, grid2))
-            {
-                exit(1);
-            }
-        }
-        */
         //MPI_Barrier(MPI_COMM_WORLD);
         iterations++;
         //pprintf("MAX_DIFF: %f\n", maxDiff);

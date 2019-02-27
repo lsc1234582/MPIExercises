@@ -1,5 +1,10 @@
 CC=mpicc
-CFLAGS=-Wall -g -O0
+
+ifeq (${DEBUG}, 1) 
+	CFLAGS=-Wall -g -O0 -DDEBUG
+else
+	CFLAGS=-Wall -g -O3 -DNDEBUG
+endif
 LDLIBS=-lm
 ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest
 

@@ -391,7 +391,9 @@ int ReadGridParams(const char fileName[], GridParams* params)
     params->m_XMax = x;
     params->m_YMax = y;
     params->m_NRow = i;
+#ifdef DEBUG
     PrintGridParameters(params);
+#endif
     fclose(fptr);
     return 0;
 }

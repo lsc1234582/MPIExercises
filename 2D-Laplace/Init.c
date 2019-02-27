@@ -66,8 +66,10 @@ int main(int argc, char**argv)
         printf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
-    printf("Info: Parameters:\n");
+#ifdef DEBUG
+    printf("Debug: Parameters:\n");
     PrintGridParameters(&params);
+#endif
     printf("Info: Function selection: %d\n", funcSelection);
 
     const double dx = (params.m_XMax - params.m_XMin) / (params.m_NRow - 1);
