@@ -157,8 +157,6 @@ int main(int argc, char**argv)
     pprintf("Info: Solving...\n");
     const double dx = patchParam.m_Dx;
     const double dy = patchParam.m_Dy;
-    double x = patchParam.m_PatchX;
-    double y = patchParam.m_PatchY;
     double maxDiff;
     double globalMaxDiff;
     double** tempGrid = NULL;
@@ -190,22 +188,18 @@ int main(int argc, char**argv)
                 DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         maxDiff = 0.0;
-        x = patchParam.m_PatchX;
         for (size_t i = patchParam.m_AbovePadding; i < patchParam.m_NTotRow - patchParam.m_BelowPadding; ++i)
         {
-            y = patchParam.m_PatchY;
             for (size_t j = patchParam.m_LeftPadding; j < patchParam.m_NTotCol - patchParam.m_RightPadding; ++j)
             {
-                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy); 
+                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
                 grid2[i][j] = term1 * term2;
                 //pprintf("%f\t", grid2[i][j]);
                 double diff = fabs(grid2[i][j] - grid1[i][j]);
                 maxDiff = diff > maxDiff ? diff : maxDiff;
-                y += dy;
             }
             //pprintf("\n");
-            x += dx;
         }
         tempGrid = grid2;
         grid2 = grid1;
