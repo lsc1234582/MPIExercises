@@ -174,7 +174,7 @@ int main(int argc, char**argv)
         MPI_Irecv(grid1[patchParam.m_AboveMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
                 RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_LeftMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
-                RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+                LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Irecv(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
                 LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 2], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
