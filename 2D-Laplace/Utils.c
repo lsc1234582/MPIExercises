@@ -87,14 +87,19 @@ int ParseGridParameterFile(const char fileName[], GridParams* params)
         pprintf("Error: Cannot open parameter file %s for reading\n", fileName);
         return 1;
     }
-    fscanf(fptr, "XMin: %lf XMax: %lf YMin: %lf YMax: %lf NRow: %d NCol: %dTolerance: %lf",
-                &params->m_XMin,
-                &params->m_XMax,
-                &params->m_YMin,
-                &params->m_YMax,
-                &params->m_NRow,
-                &params->m_NCol,
-                &params->m_Tolerance);
+    if(fscanf(fptr, "XMin: %lf XMax: %lf YMin: %lf YMax: %lf NRow: %d NCol: %d Tolerance: %lf",
+                    &params->m_XMin,
+                    &params->m_XMax,
+                    &params->m_YMin,
+                    &params->m_YMax,
+                    &params->m_NRow,
+                    &params->m_NCol,
+                    &params->m_Tolerance) < 7)
+    {
+        printf("Error: Error in parsing parameter file %s\n", fileName);
+        fclose(fptr);
+        return 1;
+    }
     fclose(fptr);
     return 0;
 }
