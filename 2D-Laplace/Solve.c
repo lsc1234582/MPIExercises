@@ -107,7 +107,7 @@ int main(int argc, char**argv)
             y = params.m_YMin;
             for (size_t j = 1; j < params.m_NCol - 1; ++j)
             {
-                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy); 
+                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
                 grid2[i][j] = term1 * term2;
                 //pprintf("%f\t", grid2[i][j]);

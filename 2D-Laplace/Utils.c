@@ -322,7 +322,7 @@ int ReadGridParams(const char fileName[], GridParams* params)
                 }
                 if (i > 0)
                 {
-                    dx = x - lx; 
+                    dx = x - lx;
                     if (dx < 0)
                     {
                         printf("Error: not standard coordiate system (expecting starting with X min)\n");
@@ -558,7 +558,7 @@ static void IndToCoordColMajor(const int ind, const int nRow, const int nCol, in
     assert(nRow > 0 && nCol > 0);
     assert(ind >= 0 && ind < nRow * nCol);
     *colInd = ind % nCol;
-    *rowInd = floor(ind / nCol); 
+    *rowInd = floor(ind / nCol);
 }
 
 void GetGridPatchParams(const GridParams* params, const int size, const int rank, const int nPatchInX, const int nPatchInY, GridPatchParams* patch)

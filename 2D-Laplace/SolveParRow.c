@@ -156,7 +156,7 @@ int main(int argc, char**argv)
             y = horPatch.m_PatchY;
             for (size_t j = horPatch.m_LeftPadding; j < horPatch.m_NTotCol - horPatch.m_RightPadding; ++j)
             {
-                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy); 
+                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
                 grid2[i][j] = term1 * term2;
                 //pprintf("%f\t", grid2[i][j]);
