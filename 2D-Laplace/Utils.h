@@ -77,6 +77,9 @@ int CreateGridParameterMPIStructDataType(MPI_Datatype* newtype);
 /* Create and commit an MPI data type for column margin elements */
 int CreateColumnMarginElementMPIDataType(const GridPatchParams* patch, MPI_Datatype* newtype);
 
+/* Initialise GridParams */
+void InitialiseGridParams(GridParams* params);
+
 /* Read GridParams from file */
 int ParseGridParameterFile(const char fileName[], GridParams* params);
 

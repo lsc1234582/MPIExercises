@@ -31,6 +31,7 @@ int main(int argc, char**argv)
     MPI_Datatype ParamsMPIType;
     CreateGridParameterMPIStructDataType(&ParamsMPIType);
     GridParams params;
+    InitialiseGridParams(&params);
 
     char resultDatBaseFileName[MAX_FILE_NAME_LENGTH] = "laplace";
     char initialDatBaseFileName[MAX_FILE_NAME_LENGTH] = "initial";

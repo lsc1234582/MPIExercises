@@ -56,6 +56,7 @@ int main(int argc, char**argv)
     }
 
     GridParams params;
+    InitialiseGridParams(&params);
     if (ParseGridParameterFile(paramsFileName, &params))
     {
         pprintf("Error: Error in reading parameter file: %s\n", paramsFileName);

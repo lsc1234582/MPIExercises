@@ -79,6 +79,17 @@ int CreateColumnMarginElementMPIDataType(const GridPatchParams* patch, MPI_Datat
     return 1;
 }
 
+void InitialiseGridParams(GridParams* params)
+{
+    params->m_XMin = 0.0;
+    params->m_XMax = 0.0;
+    params->m_YMin = 0.0;
+    params->m_YMax = 0.0;
+    params->m_NRow = 0;
+    params->m_NCol = 0;
+    params->m_Tolerance = 0.0;
+}
+
 int ParseGridParameterFile(const char fileName[], GridParams* params)
 {
     FILE* fptr;
