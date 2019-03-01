@@ -87,7 +87,7 @@ void InitialiseGridParams(GridParams* params)
     params->m_YMax = 0.0;
     params->m_NRow = 0;
     params->m_NCol = 0;
-    params->m_Tolerance = 0.0;
+    params->m_Tolerance = -1.0;
 }
 
 int ParseGridParameterFile(const char fileName[], GridParams* params)
