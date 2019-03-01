@@ -40,6 +40,17 @@ double (*const funcs[])(double, double) =
     func3
 };
 
+void InitialiseGridParams(GridParams* params)
+{
+    params->m_XMin = 0.0;
+    params->m_XMax = 0.0;
+    params->m_YMin = 0.0;
+    params->m_YMax = 0.0;
+    params->m_NRow = 0;
+    params->m_NCol = 0;
+    params->m_Tolerance = -1.0;
+}
+
 double GetDx(const GridParams* params)
 {
     assert(params->m_XMax > params->m_XMin);
@@ -77,17 +88,6 @@ int CreateColumnMarginElementMPIDataType(const GridPatchParams* patch, MPI_Datat
     MPI_Type_create_resized(MPI_DOUBLE, 0, (MPI_Aint)(patch->m_NTotCol * sizeof(MPI_DOUBLE)), newType);
     MPI_Type_commit(newType);
     return 1;
-}
-
-void InitialiseGridParams(GridParams* params)
-{
-    params->m_XMin = 0.0;
-    params->m_XMax = 0.0;
-    params->m_YMin = 0.0;
-    params->m_YMax = 0.0;
-    params->m_NRow = 0;
-    params->m_NCol = 0;
-    params->m_Tolerance = -1.0;
 }
 
 int ParseGridParameterFile(const char fileName[], GridParams* params)
