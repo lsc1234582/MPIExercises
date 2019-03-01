@@ -1,9 +1,9 @@
 CC=mpicc
 
-ifeq (${DEBUG}, 1) 
+ifeq (${DEBUG}, 1)
 	CFLAGS=-Wall -g -O0 -DDEBUG
 else
-	CFLAGS=-Wall -g -O3 -DNDEBUG
+	CFLAGS=-Wall -g -O0 -DNDEBUG
 endif
 LDLIBS=-lm
 ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest
@@ -11,13 +11,13 @@ ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest
 .PHONY: all
 all: ${ALL}
 
-Init: Init.o Utils.o 
+Init: Init.o Utils.o
 
 InitPar: InitPar.o Utils.o
 
 Combine: Combine.o Utils.o
 
-Solve: Solve.o Utils.o  
+Solve: Solve.o Utils.o
 
 SolveParRow: SolveParRow.o Utils.o
 
