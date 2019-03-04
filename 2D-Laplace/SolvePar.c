@@ -184,7 +184,7 @@ int main(int argc, char**argv)
                 LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Irecv(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
                 LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 2], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
+        MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1 - patchParam.m_RightMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
                 RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         /* Then exchange top and bottom rows vertically, including any diagnal elements  */
@@ -195,7 +195,7 @@ int main(int argc, char**argv)
                 UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Irecv(grid1[patchParam.m_NTotRow - 1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
                 UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[patchParam.m_NTotRow - 2], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
+        MPI_Isend(grid1[patchParam.m_NTotRow - 1 - patchParam.m_BelowMargin], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
                 DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         maxDiff = 0.0;
