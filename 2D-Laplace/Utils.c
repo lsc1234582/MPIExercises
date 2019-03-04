@@ -294,6 +294,19 @@ int ConcatenateGrids(const double*** grids, const GridParams* params, const int 
     return 0;
 }
 
+int CompareGridParams(const GridParams* params1, const GridParams* params2)
+{
+    int result = 1;
+    result &= fabs(params1->m_XMin - params2->m_XMin) < EPSILON;
+    result &= fabs(params1->m_XMax - params2->m_XMax) < EPSILON;
+    result &= fabs(params1->m_YMin - params2->m_YMin) < EPSILON;
+    result &= fabs(params1->m_YMax - params2->m_YMax) < EPSILON;
+    result &= params1->m_NRow == params2->m_NRow;
+    result &= params1->m_NCol == params2->m_NCol;
+    result &= fabs(params1->m_Tolerance - params2->m_Tolerance) < EPSILON;
+    return result;
+}
+
 /* A crude parser to read parameters from raw .dat file
  * Note that the format is more strict than the gnuplot .dat file in that each row of points must be followed by
  * exactly one empty line*/

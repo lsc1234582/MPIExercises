@@ -6,7 +6,7 @@ else
 	CFLAGS=-Wall -g -O0 -DNDEBUG
 endif
 LDLIBS=-lm
-ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest
+ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest Compare
 
 .PHONY: all
 all: ${ALL}
@@ -23,9 +23,11 @@ SolveParRow: SolveParRow.o Utils.o
 
 SolvePar: SolvePar.o Utils.o
 
-Utils.o: Utils.h Utils.c
-
 ReadGridParamsTest: ReadGridParamsTest.o Utils.o
+
+Compare: Compare.o Utils.o
+
+Utils.o: Utils.h Utils.c
 
 .PHONY: clean
 clean:

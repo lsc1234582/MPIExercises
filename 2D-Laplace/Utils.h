@@ -104,6 +104,9 @@ int ReadGrid(const char fileName[], const GridParams* params, double** grid1, do
 /* Read a grid patch from file */
 int ReadGridPatch(const char fileName[], const GridPatchParams* patch, double** grid1, double** grid2);
 
+/* Compares two GridParams */
+int CompareGridParams(const GridParams* params1, const GridParams* params2);
+
 /* Read a GridParams from file */
 int ReadGridParams(const char fileName[], GridParams* params);
 
