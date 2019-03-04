@@ -60,6 +60,12 @@ int main(int argc, char**argv)
             PrintHelp();
             exit(1);
         }
+        if (size != numPatchInX * numPatchInY)
+        {
+            printf("Error: The number of processes (%d) does not equal number of patches in X (%d) * number of patches in Y (%d)\n",
+                    size, numPatchInX, numPatchInY);
+            exit(1);
+        }
 
         if(strlen(argv[3]) > MAX_FILE_NAME_LENGTH - 1)
         {

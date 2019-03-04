@@ -68,7 +68,12 @@ int main(int argc, char**argv)
             PrintHelp();
             exit(1);
         }
-        assert(size == numPatchInX * numPatchInY);
+        if (size != numPatchInX * numPatchInY)
+        {
+            printf("Error: The number of processes (%d) does not equal number of patches in X (%d) * number of patches in Y (%d)\n",
+                    size, numPatchInX, numPatchInY);
+            exit(1);
+        }
         /* Parse and broadcast parameters */
         if (ParseGridParameterFile(paramsFileName, &params))
         {
