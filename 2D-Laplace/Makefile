@@ -1,9 +1,9 @@
 CC=mpicc
 
-ifeq (${DEBUG}, 1)
-	CFLAGS=-Wall -g -O0 -DDEBUG
+ifeq (${DEBUG}, 0)
+	CFLAGS=-Wall -g -O3 -DNDEBUG
 else
-	CFLAGS=-Wall -g -O0 -DNDEBUG
+	CFLAGS=-Wall -g -O0 -DDEBUG
 endif
 LDLIBS=-lm
 ALL=Init InitPar Combine Solve SolveParRow SolvePar ReadGridParamsTest Compare
