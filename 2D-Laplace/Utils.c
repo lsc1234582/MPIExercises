@@ -53,16 +53,30 @@ void InitialiseGridParams(GridParams* params)
 
 double GetDx(const GridParams* params)
 {
-    assert(params->m_XMax > params->m_XMin);
-    assert(params->m_NRow > 1);
-    return (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    assert(params->m_XMax >= params->m_XMin);
+    assert(params->m_NRow >= 1);
+    if (params->m_NRow > 1)
+    {
+        return (params->m_XMax - params->m_XMin) / (params->m_NRow - 1);
+    }
+    else
+    {
+        return 0.0;
+    }
 }
 
 double GetDy(const GridParams* params)
 {
-    assert(params->m_YMax > params->m_YMin);
-    assert(params->m_NCol > 1);
-    return (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    assert(params->m_YMax >= params->m_YMin);
+    assert(params->m_NCol >= 1);
+    if (params->m_NCol > 1)
+    {
+        return (params->m_YMax - params->m_YMin) / (params->m_NCol - 1);
+    }
+    else
+    {
+        return 0.0;
+    }
 }
 
 int CreateGridParameterMPIStructDataType(MPI_Datatype* newType)

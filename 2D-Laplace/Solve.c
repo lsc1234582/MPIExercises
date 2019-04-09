@@ -3,6 +3,7 @@
  */
 #include "Utils.h"
 
+#include <assert.h>
 #include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
@@ -62,6 +63,8 @@ int main(int argc, char**argv)
         pprintf("Error: Error in reading parameter file: %s\n", paramsFileName);
         exit(1);
     }
+    assert(params.m_NCol > 1);
+    assert(params.m_NRow > 1);
 #ifdef DEBUG
     pprintf("Debug: Parameters:\n");
     PrintGridParameters(&params);

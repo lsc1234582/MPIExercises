@@ -100,6 +100,10 @@ int main(int argc, char**argv)
             exit(1);
         }
 
+        assert(params.m_NCol > 1);
+        assert(params.m_NRow > 1);
+        assert(params.m_NCol >= numPatchInY);
+        assert(params.m_NRow >= numPatchInX);
 #ifdef DEBUG
         printf("Debug: Parameters:\n");
         PrintGridParameters(&params);

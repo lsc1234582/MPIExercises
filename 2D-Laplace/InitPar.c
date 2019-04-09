@@ -99,6 +99,10 @@ int main(int argc, char**argv)
             }
             strncpy(solutionDatBaseFileName, argv[6], MAX_FILE_NAME_LENGTH);
         }
+        assert(params.m_NCol > 1);
+        assert(params.m_NRow > 1);
+        assert(params.m_NCol >= numPatchInY);
+        assert(params.m_NRow >= numPatchInX);
 #ifdef DEBUG
         printf("Info: Parameters:\n");
         PrintGridParameters(&params);
