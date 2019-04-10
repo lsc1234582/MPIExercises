@@ -46,8 +46,8 @@ NCol: ${3}
 Tolerance: ${SOLVER_TOLERANCE}
 SOMEMARK
   echo "Running test case: ${test_case}"
-  timeout ${TIME_OUT} ${DIR}/../Init parameters.in $1 2>&1 | tee logs
-  timeout ${TIME_OUT} ${DIR}/../Solve parameters.in 2>&1 | tee -a logs
+  timeout ${TIME_OUT} ${DIR}/../Init parameters.in $1 2>&1 > logs
+  timeout ${TIME_OUT} ${DIR}/../Solve parameters.in 2>&1 >> logs
   python ${DIR}/test_checker.py -a solution.dat -b laplace.dat
   if [[ $? -eq 0 ]]; then
     echo "Test case: ${test_case} PASS"
@@ -82,11 +82,11 @@ NCol: ${3}
 Tolerance: ${SOLVER_TOLERANCE}
 SOMEMARK
   echo "Running test case: ${test_case}"
-  timeout ${TIME_OUT} mpirun -n $4 ${DIR}/../InitPar $4 1 parameters.in $1 2>&1 | tee logs
-  ${DIR}/../Combine $4 1 initial.combined.dat initial 2>&1 | tee -a logs
-  ${DIR}/../Combine $4 1 solution.combined.dat solution 2>&1 | tee -a logs
-  timeout ${TIME_OUT} mpirun -n $4 --mca btl self,tcp ${DIR}/../SolveParRow parameters.in 2>&1 | tee -a logs
-  ${DIR}/../Combine $4 1 laplace.combined.dat laplace 2>&1 | tee -a logs
+  timeout ${TIME_OUT} mpirun -n $4 ${DIR}/../InitPar $4 1 parameters.in $1 2>&1 > logs
+  ${DIR}/../Combine $4 1 initial.combined.dat initial 2>&1 >> logs
+  ${DIR}/../Combine $4 1 solution.combined.dat solution 2>&1 >> logs
+  timeout ${TIME_OUT} mpirun -n $4 --mca btl self,tcp ${DIR}/../SolveParRow parameters.in 2>&1 >> logs
+  ${DIR}/../Combine $4 1 laplace.combined.dat laplace 2>&1 >> logs
   python ${DIR}/test_checker.py -a solution.combined.dat -b laplace.combined.dat
   if [[ $? -eq 0 ]]; then
     echo "Test case: ${test_case} PASS"
@@ -123,11 +123,11 @@ Tolerance: ${SOLVER_TOLERANCE}
 SOMEMARK
   echo "Running test case: ${test_case}"
   (( num_proc = $4 * $5 ))
-  timeout ${TIME_OUT} mpirun -n ${num_proc} ${DIR}/../InitPar $4 $5 parameters.in $1 2>&1 | tee logs
-  ${DIR}/../Combine $4 $5 initial.combined.dat initial 2>&1 | tee -a logs
-  ${DIR}/../Combine $4 $5 solution.combined.dat solution 2>&1 | tee -a logs
-  timeout ${TIME_OUT} mpirun -n ${num_proc} --mca btl self,tcp ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 | tee -a logs
-  ${DIR}/../Combine $4 $5 laplace.combined.dat laplace 2>&1 | tee -a logs
+  timeout ${TIME_OUT} mpirun -n ${num_proc} ${DIR}/../InitPar $4 $5 parameters.in $1 2>&1 > logs
+  ${DIR}/../Combine $4 $5 initial.combined.dat initial 2>&1 >> logs
+  ${DIR}/../Combine $4 $5 solution.combined.dat solution 2>&1 >> logs
+  timeout ${TIME_OUT} mpirun -n ${num_proc} --mca btl self,tcp ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 >> logs
+  ${DIR}/../Combine $4 $5 laplace.combined.dat laplace 2>&1 >> logs
   python ${DIR}/test_checker.py -a solution.combined.dat -b laplace.combined.dat
   if [[ $? -eq 0 ]]; then
     echo "Test case: ${test_case} PASS"
