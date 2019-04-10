@@ -22,9 +22,13 @@ def discover_profile_Cases(path):
         os.chdir(case_dir)
 
         # Parse a case
+        try:
+            with open("profile.meta/meta.json", "r") as fh:
+                case_meta = json.load(fh)
+        except Exception as e:
+            os.chdir(dir_stack.pop())
+            continue
 
-        with open("profile.meta/meta.json", "r") as fh:
-            case_meta = json.load(fh)
         case_entry = case_meta.copy()
         del case_entry["CommandTimeout"]
         del case_entry["Comments"]

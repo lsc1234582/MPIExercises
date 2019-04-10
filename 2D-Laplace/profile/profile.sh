@@ -8,18 +8,18 @@ Y_MIN=-1.0
 Y_MAX=1.0
 
 # Profile cases
-declare -a FUNCTIONS=(0)
-#declare -a NUM_ROWS=(64 128 256 512)
-#declare -a NUM_COLS=(64 128 256 512)
+declare -a FUNCTIONS=(0 1 2 3)
+declare -a NUM_ROWS=(64 128 192 256)
+declare -a NUM_COLS=(64 128 192 256)
+declare -a NUM_PATCH_X=(1 2 3)
+declare -a NUM_PATCH_Y=(1 2 3)
+#declare -a NUM_ROWS=(64 128)
+#declare -a NUM_COLS=(64 128)
 #declare -a NUM_PATCH_X=(1 2 3)
 #declare -a NUM_PATCH_Y=(1 2 3)
-declare -a NUM_ROWS=(64 128)
-declare -a NUM_COLS=(64 128)
-declare -a NUM_PATCH_X=(1 2)
-declare -a NUM_PATCH_Y=(1 2)
 ## Version
-PROFILE_SERIAL=0
-PROFILE_PARROW=0
+PROFILE_SERIAL=1
+PROFILE_PARROW=1
 PROFILE_PAR=1
 BUILD_CMD="make DEBUG=1"
 CLEAN_CMD="make clean"
@@ -76,6 +76,7 @@ function build () {
 # 7 - NCol
 # 8 - NPX
 # 9 - NPY
+# 10 - FuncSelection
 function generate_meta_json () {
   git branch | grep \* | cut -d ' ' -f2 > $1/git.info
   git log --oneline >> $1/git.info
@@ -98,6 +99,7 @@ function generate_meta_json () {
 "SourceVersionTag": "${git_tag}",
 "BuildCommand": "${BUILD_CMD}",
 "SolverLaunchCommand": "$4",
+"Func": "${10}",
 "AdditionalTags": "${ADDITINAL_TAGS}",
 "Comments": "${COMMENTS}"
 }
@@ -124,7 +126,7 @@ function profile_serial () {
   map --profile --export=profile.json profile.map
   echo "========================================"
   end_date_time=$(date)
-  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "" "Serial" "$2" "$3" "" ""
+  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "" "Serial" "$2" "$3" "" "" $1
   (( NUM_PROFILE_CASES++ ))
   cd ..
 }
@@ -153,7 +155,7 @@ function profile_parallel_row () {
   map --profile --export=profile.json profile.map
   echo "========================================"
   end_date_time=$(date)
-  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "ParRow" "$2" "$3" "$4" ""
+  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "ParRow" "$2" "$3" "$4" "" $1
   (( NUM_PROFILE_CASES++ ))
   cd ..
 }
@@ -184,7 +186,7 @@ function profile_parallel () {
   map --profile --export=profile.json profile.map
   echo "========================================"
   end_date_time=$(date)
-  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "Par" "$2" "$3" "$4" "$5"
+  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "Par" "$2" "$3" "$4" "$5" $1
   (( NUM_PROFILE_CASES++ ))
   cd ..
 }
