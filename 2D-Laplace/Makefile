@@ -29,6 +29,10 @@ Compare: Compare.o Utils.o
 
 Utils.o: Utils.h Utils.c
 
+.PHONY: test
+test: ${ALL}
+	./tests/verify.sh
+
 .PHONY: clean
 clean:
 	rm -f *.o ${ALL}
