@@ -7,6 +7,13 @@ X_MAX=1.0
 Y_MIN=-1.0
 Y_MAX=1.0
 
+#TODO: Reduce disk usage (Goal: case < 1MB on average)
+# 1. Do not write profile.json
+# 2. Remove output files
+# 3. Only write map_profile_log for each unique case label (not every repetitive case)
+# 4. Compression? Individual case? Whole profile folder?
+# 5. Do not profile ParRow all together? Just a special case of Par. But I guess these two are still fundamentally
+# different in impelementation.jn
 # Profile cases
 declare -a FUNCTIONS=(0 1 2 3)
 declare -a NUM_ROWS=(64 128 192 256)
@@ -29,7 +36,7 @@ REP=3 # Number of repetitions for each profile case
 ## Code version and comment: automatically save git log and git branch output, and associate a comment with the code
     ## version
 ADDITINAL_TAGS=""
-COMMENTS=""
+COMMENTS="Solver timeout (seconds): ${TIME_OUT}"
 
 # Profile stats
 SUMMARY_STR=""
@@ -92,10 +99,15 @@ function generate_meta_json () {
 "EndDateTime": "$3",
 "CommandTimeout" : "${TIME_OUT}",
 "Solver": "$5",
-"NRow": "$6",
-"NCol": "$7",
-"NPX": "$8",
-"NPY": "$9",
+"NRow": $6,
+"NCol": $7,
+"NPX": $8,
+"NPY": $9,
+"SolverTolerance": ${SOLVER_TOLERANCE},
+"XMin": ${X_MIN},
+"XMax": ${X_MAX},
+"YMin": ${Y_MIN},
+"YMax": ${Y_MAX},
 "SourceVersionTag": "${git_tag}",
 "BuildCommand": "${BUILD_CMD}",
 "SolverLaunchCommand": "$4",
@@ -110,7 +122,7 @@ SOMEMARK
 # 2 - num rows
 # 3 - num cols
 function profile_serial () {
-  profile_case="SERIAL_FUNC${1}_NROW${2}_NCOL${3}_NPX${4}"
+  profile_case="SERIAL_FUNC${1}_NROW${2}_NCOL${3}"
   date=$(date +"D%dM%mY%yH%HM%MS%S")
   profile_case_dir="profilecase_${profile_case}_${date}"
   mkdir ${profile_case_dir}
