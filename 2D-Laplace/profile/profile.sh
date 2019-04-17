@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TIME_OUT=120
+TIME_OUT=300
 SOLVER_TOLERANCE=0.00000001
 X_MIN=-1.0
 X_MAX=1.0
@@ -8,35 +8,36 @@ Y_MIN=-1.0
 Y_MAX=1.0
 
 #TODO: Reduce disk usage (Goal: case < 1MB on average)
-# 1. Do not write profile.json
-# 2. Remove output files
-# 3. Only write map_profile_log for each unique case label (not every repetitive case)
-# 4. Compression? Individual case? Whole profile folder?
+# NO 1. Do not write profile.json
+# DONE 2. Remove output files
+# DONE 3. Only write map_profile_log for each unique case label (not every repetitive case)
+# DONE 4. Compression? Individual case? Whole profile folder?
 # 5. Do not profile ParRow all together? Just a special case of Par. But I guess these two are still fundamentally
 # different in impelementation.jn
 # Profile cases
-declare -a FUNCTIONS=(0 1 2 3)
-declare -a NUM_ROWS=(64 128 192 256)
-declare -a NUM_COLS=(64 128 192 256)
-declare -a NUM_PATCH_X=(1 2 3)
-declare -a NUM_PATCH_Y=(1 2 3)
-#declare -a NUM_ROWS=(64 128)
-#declare -a NUM_COLS=(64 128)
+#declare -a FUNCTIONS=(0 1 2 3)
+#declare -a NUM_ROWS=(64 128 192 256)
+#declare -a NUM_COLS=(64 128 192 256)
 #declare -a NUM_PATCH_X=(1 2 3)
 #declare -a NUM_PATCH_Y=(1 2 3)
+declare -a FUNCTIONS=(0)
+declare -a NUM_ROWS=(256)
+declare -a NUM_COLS=(256)
+declare -a NUM_PATCH_X=(1)
+declare -a NUM_PATCH_Y=(1)
 ## Version
 PROFILE_SERIAL=1
-PROFILE_PARROW=1
+PROFILE_PARROW=0
 PROFILE_PAR=1
 BUILD_CMD="make DEBUG=1"
 CLEAN_CMD="make clean"
 SOLVER_LAUNCH_CMD="mpirun --mca btl self,tcp"
-REP=3 # Number of repetitions for each profile case
+REP=2 # Number of repetitions for each profile case
 
 ## Code version and comment: automatically save git log and git branch output, and associate a comment with the code
     ## version
 ADDITINAL_TAGS=""
-COMMENTS="Solver timeout (seconds): ${TIME_OUT}"
+COMMENTS=""
 
 # Profile stats
 SUMMARY_STR=""
@@ -95,24 +96,25 @@ function generate_meta_json () {
   fi
   cat <<-SOMEMARK > $1/meta.json
 {
-"StartDateTime": "$2",
-"EndDateTime": "$3",
-"CommandTimeout" : "${TIME_OUT}",
-"Solver": "$5",
+"Func": "${10}",
 "NRow": $6,
 "NCol": $7,
-"NPX": $8,
-"NPY": $9,
 "SolverTolerance": ${SOLVER_TOLERANCE},
 "XMin": ${X_MIN},
 "XMax": ${X_MAX},
 "YMin": ${Y_MIN},
 "YMax": ${Y_MAX},
+"Solver": "$5",
 "SourceVersionTag": "${git_tag}",
 "BuildCommand": "${BUILD_CMD}",
+"NPX": $8,
+"NPY": $9,
 "SolverLaunchCommand": "$4",
-"Func": "${10}",
+"Machine": "$(hostname)",
 "AdditionalTags": "${ADDITINAL_TAGS}",
+"StartDateTime": "$2",
+"EndDateTime": "$3",
+"SolverTimeout" : ${TIME_OUT},
 "Comments": "${COMMENTS}"
 }
 SOMEMARK
@@ -134,11 +136,18 @@ function profile_serial () {
   build 2>&1 > profile.meta/compile.info
   echo "Running profile case: ${profile_case}"
   timeout ${TIME_OUT} ${DIR}/../Init parameters.in $1 2>&1 > logs
-  timeout ${TIME_OUT} map --profile --log=map_profile_log --output=profile --nompi ${DIR}/../Solve parameters.in 2>&1 >> logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_INIT
+  fi
+  timeout ${TIME_OUT} map --profile --output=profile --nompi ${DIR}/../Solve parameters.in 2>&1 >> logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_SOLVE
+  fi
   map --profile --export=profile.json profile.map
+  rm *.dat
   echo "========================================"
   end_date_time=$(date)
-  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "" "Serial" "$2" "$3" "" "" $1
+  generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "" "Serial" "$2" "$3" 1 1 $1
   (( NUM_PROFILE_CASES++ ))
   cd ..
 }
@@ -160,11 +169,16 @@ function profile_parallel_row () {
   build 2>&1 > profile.meta/compile.info
   echo "Running profile case: ${profile_case}"
   timeout ${TIME_OUT} mpirun -n $4 ${DIR}/../InitPar $4 1 parameters.in $1 2>&1 > logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_INIT
+  fi
   ${DIR}/../Combine $4 1 initial.combined.dat initial 2>&1 >> logs
-  ${DIR}/../Combine $4 1 solution.combined.dat solution 2>&1 >> logs
-  timeout ${TIME_OUT} map --profile --log=map_profile_log --output=profile ${SOLVER_LAUNCH_CMD} -n $4 ${DIR}/../SolveParRow parameters.in 2>&1 >> logs
-  ${DIR}/../Combine $4 1 laplace.combined.dat laplace 2>&1 >> logs
+  timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n $4 ${DIR}/../SolveParRow parameters.in 2>&1 >> logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_SOLVE
+  fi
   map --profile --export=profile.json profile.map
+  rm *.dat
   echo "========================================"
   end_date_time=$(date)
   generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "ParRow" "$2" "$3" "$4" "" $1
@@ -191,12 +205,17 @@ function profile_parallel () {
   echo "Running profile case: ${profile_case}"
   (( num_proc = $4 * $5 ))
   timeout ${TIME_OUT} mpirun -n ${num_proc} ${DIR}/../InitPar $4 $5 parameters.in $1 2>&1 > logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_SOLVE
+  fi
   ${DIR}/../Combine $4 $5 initial.combined.dat initial 2>&1 >> logs
-  ${DIR}/../Combine $4 $5 solution.combined.dat solution 2>&1 >> logs
-  timeout ${TIME_OUT} map --profile --log=map_profile_log --output=profile ${SOLVER_LAUNCH_CMD} -n ${num_proc} ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 >> logs
-  ${DIR}/../Combine $4 $5 laplace.combined.dat laplace 2>&1 >> logs
+  timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n ${num_proc} ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 >> logs
+  if [[ $? -eq 124 ]]; then
+    touch TIMEOUT_SOLVE
+  fi
   map --profile --export=profile.json profile.map
   echo "========================================"
+  rm *.dat
   end_date_time=$(date)
   generate_meta_json "$(pwd)/profile.meta" "${start_date_time}" "${end_date_time}" "${SOLVER_LAUNCH_CMD}" "Par" "$2" "$3" "$4" "$5" $1
   (( NUM_PROFILE_CASES++ ))
@@ -214,6 +233,7 @@ fi
 mkdir ${build_dir}
 cd ${build_dir}
 
+SECONDS=0
 if [[ ${PROFILE_SERIAL} -eq 1 ]]; then
   # Run all serial profile cases
   for func in "${FUNCTIONS[@]}"
@@ -280,7 +300,12 @@ if (( ${PROFILE_PAR} == 1 )); then
   done
 fi
 
+# Compress the whole profile folder
+cd ..
+tar czf "${build_dir}.tar.gz" ${build_dir}
+
+duration=${SECONDS}
 # Print summary
 echo "===== Profile Summary ====="
 echo "${SUMMARY_STR}"
-echo "${NUM_PROFILE_CASES} profile cases run"
+echo "${NUM_PROFILE_CASES} profile cases run in $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
