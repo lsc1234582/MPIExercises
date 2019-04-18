@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import json
 import seaborn as sns
 import tarfile
+import subprocess as spr
 
 
 # Solver category order mapping: Axis type -> key func
@@ -30,6 +31,8 @@ metrics_2_ylabel = {
     "RunTime": "RunTime / ms",
     "Compute+MPI+IO": "Compute+MPI+IO percentage / %"
 }
+
+# profile stats
 
 def curdir():
     return os.path.abspath(os.curdir)
@@ -282,6 +285,7 @@ def load_cases(root, metrics):
     """
     dir_stack = []
     cases = []
+    timed_out_cases = []
 
     def profile_and_meta_json_file(members):
         for tarinfo in members:
@@ -313,8 +317,16 @@ def load_cases(root, metrics):
         except Exception as e:
             timeout_init = os.path.exists("TIMEOUT_INIT")
             timeout_solve = os.path.exists("TIMEOUT_SOLVE")
-            if not timeout_init and not timeout_solve:
-                print("WARNING: {} misses profile.json".format(case_dir))
+            if timeout_init or timeout_solve:
+                print("WARNING: {} timed out, skipping".format(case_dir))
+                timed_out_cases.append(case_dir)
+            if os.path.exists("profile.map"):
+                print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
+                spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
+                with open("profile.json", "r") as fh:
+                    profile_json = json.load(fh)
+            else:
+                print("WARNING: {} misses profile.json and profile.map".format(case_dir))
                 os.chdir(dir_stack.pop())
                 continue
         case_entry["Machine"] = profile_json["info"]["machine"]
@@ -329,6 +341,7 @@ def load_cases(root, metrics):
         os.chdir(dir_stack.pop())
         # TODO: Remove current case after being done with it (if uncompressed)?
         #sh.rmtree(case_dir, ignore_errors=True)
+    print(timed_out_cases)
     return pd.DataFrame(cases)
 
 def add_metrics(metrics, cases, ind, profile_json):
@@ -514,6 +527,7 @@ def curdir():
 def load_cases_legacy(root):
     dir_stack = []
     cases = []
+    timed_out_cases = []
     dir_stack.append(curdir())
     os.chdir(root)
     for p in glob.iglob("**/profilecase_*", recursive=True):
@@ -542,10 +556,20 @@ def load_cases_legacy(root):
         except Exception as e:
             timeout_init = os.path.exists("TIMEOUT_INIT")
             timeout_solve = os.path.exists("TIMEOUT_SOLVE")
+            if timeout_init or timeout_solve:
+                timed_out_cases.append(case_dir)
             if not timeout_init and not timeout_solve:
-                print("WARNING: {} misses profile.json".format(case_dir))
-                os.chdir(dir_stack.pop())
-                continue
+                if os.path.exists("profile.map"):
+                    print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
+                    spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
+                    with open("profile.json", "r") as fh:
+                        case_profile = json.load(fh)
+                        case_entry["Machine"] = case_profile["info"]["machine"]
+                        del case_profile
+                else:
+                    print("WARNING: {} misses profile.json and profile.map".format(case_dir))
+                    os.chdir(dir_stack.pop())
+                    continue
 
         #print(case_dir)
         case_entry["CasePath"] = case_dir
@@ -555,6 +579,7 @@ def load_cases_legacy(root):
         #print(case_entry)
         os.chdir(dir_stack.pop())
 
+    print(timed_out_cases)
     cases = pd.DataFrame(cases)
     return cases
 
