@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Make sure sampler interval is set to minimum (1ms) so that as many samples are collected
+
+export ALLINEA_SAMPLER_INTERVAL=1
 TIME_OUT=300
 SOLVER_TOLERANCE=0.00000001
 X_MIN=-1.0
@@ -15,24 +18,24 @@ Y_MAX=1.0
 # 5. Do not profile ParRow all together? Just a special case of Par. But I guess these two are still fundamentally
 # different in impelementation.jn
 # Profile cases
-#declare -a FUNCTIONS=(0 1 2 3)
-#declare -a NUM_ROWS=(64 128 192 256)
-#declare -a NUM_COLS=(64 128 192 256)
-#declare -a NUM_PATCH_X=(1 2 3)
-#declare -a NUM_PATCH_Y=(1 2 3)
-declare -a FUNCTIONS=(0)
-declare -a NUM_ROWS=(256)
-declare -a NUM_COLS=(256)
-declare -a NUM_PATCH_X=(1)
-declare -a NUM_PATCH_Y=(1)
+declare -a FUNCTIONS=(0 1 2 3)
+declare -a NUM_ROWS=(64 128 192 256)
+declare -a NUM_COLS=(64 128 192 256)
+declare -a NUM_PATCH_X=(1 2 3)
+declare -a NUM_PATCH_Y=(1 2 3)
+#declare -a FUNCTIONS=(0)
+#declare -a NUM_ROWS=(256)
+#declare -a NUM_COLS=(256)
+#declare -a NUM_PATCH_X=(1)
+#declare -a NUM_PATCH_Y=(1)
 ## Version
 PROFILE_SERIAL=1
 PROFILE_PARROW=0
 PROFILE_PAR=1
-BUILD_CMD="make DEBUG=1"
+BUILD_CMD="make DEBUG=0"
 CLEAN_CMD="make clean"
 SOLVER_LAUNCH_CMD="mpirun --mca btl self,tcp"
-REP=2 # Number of repetitions for each profile case
+REP=3 # Number of repetitions for each profile case
 
 ## Code version and comment: automatically save git log and git branch output, and associate a comment with the code
     ## version

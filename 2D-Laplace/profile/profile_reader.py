@@ -123,7 +123,6 @@ def select_cases(cases, sel_dict, composite_axes, metrics, legacy_load=False, co
         assert(len(axes) == 2)
         c_axes[c_ax_name] = axes
 
-    print(c_axes)
     for i, row in plot_df.iterrows():
         # Add composite axis
         for c_ax_name, axes in c_axes.items():
@@ -160,7 +159,7 @@ def select_cases(cases, sel_dict, composite_axes, metrics, legacy_load=False, co
 
     if "Speedup" in metrics:
         max_runtime = np.max(plot_df.loc[:, "RunTime"])
-        plot_df = plot_df.assign(Speedup=lambda x: ax_runtime / x["RunTime"])
+        plot_df = plot_df.assign(Speedup=lambda x: max_runtime / x["RunTime"])
     if "RunTimeNorm" in metrics:
         min_runtime = np.min(plot_df["RunTime"])
         plot_df = plot_df.assign(RunTimeNorm=lambda x: x["RunTime"] / min_runtime)
@@ -242,6 +241,7 @@ def generate_profile_cases(root, uncompress_folder=".profiletmp", delete_uncompr
         return os.path.isfile(f) and tarfile.is_tarfile(f) and "gz" in os.path.splitext(f)[1]
 
     for p in glob.iglob("**/profile_*", recursive=True):
+        print("INFO: profile folder/file {} detected".format(p))
         if p.split(os.path.sep)[0] == uncompress_folder:
             # Make sure do not re-glob uncompressed folders
             continue
@@ -314,9 +314,9 @@ def load_cases(root, metrics):
             timeout_init = os.path.exists("TIMEOUT_INIT")
             timeout_solve = os.path.exists("TIMEOUT_SOLVE")
             if not timeout_init and not timeout_solve:
-                print("ERROR: {} misses profile.json".format(case_dir))
+                print("WARNING: {} misses profile.json".format(case_dir))
                 os.chdir(dir_stack.pop())
-                raise e
+                continue
         case_entry["Machine"] = profile_json["info"]["machine"]
         case_entry["TimeoutInit"] = timeout_init
         case_entry["TimeoutSolve"] = timeout_solve
@@ -327,6 +327,8 @@ def load_cases(root, metrics):
         del profile_json
         #print(case_entry)
         os.chdir(dir_stack.pop())
+        # TODO: Remove current case after being done with it (if uncompressed)?
+        #sh.rmtree(case_dir, ignore_errors=True)
     return pd.DataFrame(cases)
 
 def add_metrics(metrics, cases, ind, profile_json):
@@ -394,7 +396,7 @@ def preprocess_cases(cases, legacy=False):
     if legacy:
         cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]] = cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]].applymap(int)
     # Make categories
-    categorical_axes = ["BuildCommand", "Func", "Machine", "Solver", "SolverLaunchCommand", "SourceVersionTag",
+    categorical_axes = ["AdditionalTags", "BuildCommand", "Func", "Machine", "Solver", "SolverLaunchCommand", "SourceVersionTag",
             "TimeoutInit", "TimeoutSolve"]
     cases.loc[:, categorical_axes] = cases.loc[:, categorical_axes].astype("category")
     return cases
@@ -541,9 +543,9 @@ def load_cases_legacy(root):
             timeout_init = os.path.exists("TIMEOUT_INIT")
             timeout_solve = os.path.exists("TIMEOUT_SOLVE")
             if not timeout_init and not timeout_solve:
-                print("ERROR: {} misses profile.json".format(case_dir))
+                print("WARNING: {} misses profile.json".format(case_dir))
                 os.chdir(dir_stack.pop())
-                raise e
+                continue
 
         #print(case_dir)
         case_entry["CasePath"] = case_dir
