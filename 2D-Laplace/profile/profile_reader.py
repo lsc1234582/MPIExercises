@@ -295,7 +295,7 @@ def load_cases(root, metrics):
                      "profile.json" in tarinfo.name):
                 yield tarinfo
 
-    for case_dir in generate_profile_cases(root, ".profiletmp", True, profile_and_meta_json_file):
+    for case_dir in generate_profile_cases(root, ".profiletmp", True):
         dir_stack.append(curdir())
         os.chdir(case_dir)
         # Parse a case
@@ -320,6 +320,8 @@ def load_cases(root, metrics):
             if timeout_init or timeout_solve:
                 print("WARNING: {} timed out, skipping".format(case_dir))
                 timed_out_cases.append(case_dir)
+                os.chdir(dir_stack.pop())
+                continue
             if os.path.exists("profile.map"):
                 print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
                 spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
