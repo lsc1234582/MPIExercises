@@ -141,12 +141,12 @@ void PrintGridParameters(const GridParams* params)
 /* Allocate a continuous block of memory for a 2D array (grid) */
 double** AllocateInitGrid(const int nRow, const int nCol)
 {
-    double** grid = (double**) malloc(nRow * sizeof(double*));
+    double** grid = (double**) calloc(nRow, sizeof(double*));
     if (grid == NULL)
     {
         return NULL;
     }
-    grid[0] = (double*) malloc(nRow * nCol * sizeof(double));
+    grid[0] = (double*) calloc(nRow * nCol, sizeof(double));
     if (grid[0] == NULL)
     {
         return NULL;
@@ -636,6 +636,8 @@ void GetGridPatchParams(const GridParams* params, const int size, const int rank
     patch->m_RightMargin = (nPatchInY > 1 && patchJ < nPatchInY - 1) ? 1 : 0;
     patch->m_NTotRow = patch->m_AboveMargin + patch->m_NRow + patch->m_BelowMargin;
     patch->m_NTotCol = patch->m_LeftMargin + patch->m_NCol + patch->m_RightMargin;
+    patch->m_NCommonTotRow = fullRowSize + 2;
+    patch->m_NCommonTotCol = fullColSize + 2;
     patch->m_AbovePadding = 1;
     patch->m_BelowPadding = 1;
     patch->m_LeftPadding = 1;

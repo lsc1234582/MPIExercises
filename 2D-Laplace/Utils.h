@@ -29,6 +29,8 @@ typedef struct
     int m_NCol;         // Number of rows of the Valid Region (Y axis)
     int m_NTotRow;      // Total number of rows = m_NRow + m_LeftMargin + m_RightMargin
     int m_NTotCol;      // Total number of columns = m_NRow + m_AboveMargin + m_BelowMargin
+    int m_NCommonTotRow;      // (Greatest) Common total number of rows across all patches
+    int m_NCommonTotCol;      // (Greatest) Common total number of columns across all patches
 
     int m_PatchI;       // The global row index of the first row (X axis)
     int m_PatchJ;       // The global column index of the first column (Y axis)
