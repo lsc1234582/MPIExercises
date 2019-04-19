@@ -172,9 +172,10 @@ int main(int argc, char**argv)
     pprintf("Info: Solving...\n");
     const double dx = patchParam.m_Dx;
     const double dy = patchParam.m_Dy;
-    double** diffs = AllocateInitGrid(patchParam.m_NCommonTotRow, patchParam.m_NCommonTotCol);
-    double** globalDiffs = AllocateInitGrid(patchParam.m_NCommonTotRow, patchParam.m_NCommonTotCol);
+    double** diffs = AllocateInitGrid(patchParam.m_NTotRow, patchParam.m_NTotCol);
     double globalMaxDiff = params.m_Tolerance;
+    double localMaxDiff = params.m_Tolerance;
+    int diffsCount = 0;
     double** tempGrid = NULL;
     int iterations = 0;
     do
@@ -222,6 +223,7 @@ int main(int argc, char**argv)
             MPI_Irecv(grid2[patchParam.m_NTotRow - 1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
                     UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         }
+        diffsCount = 0;
         for (size_t i = patchParam.m_AbovePadding; i < patchParam.m_NTotRow - patchParam.m_BelowPadding; ++i)
         {
             for (size_t j = patchParam.m_LeftPadding; j < patchParam.m_NTotCol - patchParam.m_RightPadding; ++j)
@@ -229,7 +231,7 @@ int main(int argc, char**argv)
                 double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
                 grid2[i][j] = term1 * term2;
-                diffs[i][j] = fabs(grid2[i][j] - grid1[i][j]);
+                diffs[0][diffsCount++] = fabs(grid2[i][j] - grid1[i][j]);
             }
         }
 
@@ -246,14 +248,15 @@ int main(int argc, char**argv)
                     DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
             MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
         }
+        localMaxDiff = params.m_Tolerance;
+
+        for (size_t i = 0; i < diffsCount; ++i)
+        {
+            localMaxDiff = diffs[0][i] > localMaxDiff ? diffs[0][i] : localMaxDiff;
+        }
 
         /* Get the global MaxDiff */
-        MPI_Allreduce(diffs[0], globalDiffs[0], patchParam.m_NCommonTotRow * patchParam.m_NCommonTotCol, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        globalMaxDiff = params.m_Tolerance;
-        for (size_t i = 0; i < patchParam.m_NCommonTotRow * patchParam.m_NCommonTotCol; ++i)
-        {
-            globalMaxDiff = globalDiffs[0][i] > globalMaxDiff ? globalDiffs[0][i] : globalMaxDiff;
-        }
+        MPI_Allreduce(&localMaxDiff, &globalMaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
         tempGrid = grid2;
         grid2 = grid1;
@@ -273,7 +276,6 @@ int main(int argc, char**argv)
     FreeGrid(grid1);
     FreeGrid(grid2);
     FreeGrid(diffs);
-    FreeGrid(globalDiffs);
 
     pprintf("Info: Exiting\n");
     MPI_Finalize();

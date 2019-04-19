@@ -636,8 +636,6 @@ void GetGridPatchParams(const GridParams* params, const int size, const int rank
     patch->m_RightMargin = (nPatchInY > 1 && patchJ < nPatchInY - 1) ? 1 : 0;
     patch->m_NTotRow = patch->m_AboveMargin + patch->m_NRow + patch->m_BelowMargin;
     patch->m_NTotCol = patch->m_LeftMargin + patch->m_NCol + patch->m_RightMargin;
-    patch->m_NCommonTotRow = fullRowSize + 2;
-    patch->m_NCommonTotCol = fullColSize + 2;
     patch->m_AbovePadding = 1;
     patch->m_BelowPadding = 1;
     patch->m_LeftPadding = 1;
