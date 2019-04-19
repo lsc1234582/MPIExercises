@@ -180,29 +180,48 @@ int main(int argc, char**argv)
     do
     {
         /* Exchange boundary values */
+        /* Receive results */
         /* First exchange left and right columns horizontally */
-        MPI_Request reqs[4];
+        MPI_Request reqs[8];
         int numReqs = 0;
-        MPI_Irecv(grid1[patchParam.m_AboveMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
-                RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_LeftMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
-                LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Irecv(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
-                LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1 - patchParam.m_RightMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
-                RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
-        /* Then exchange top and bottom rows vertically, including any diagnal elements  */
-        numReqs = 0;
-        MPI_Irecv(grid1[0], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
-                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Irecv(grid1[patchParam.m_NTotRow - 1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[patchParam.m_NTotRow - 1 - patchParam.m_BelowMargin], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
-                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        if (iterations == 0)
+        {
+            // Always need to fill the halo during initial iteration
+            MPI_Irecv(grid1[patchParam.m_AboveMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
+                    RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
+                    LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_LeftMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
+                    LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1 - patchParam.m_RightMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
+                    RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+            /* Then exchange top and bottom rows vertically, including any diagnal elements  */
+            numReqs = 0;
+            MPI_Irecv(grid1[0], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(grid1[patchParam.m_NTotRow - 1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[patchParam.m_NTotRow - 1 - patchParam.m_BelowMargin], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        }
+        else
+        {
+            // Note that the receiving order of vertical and horizontal halo strips is indeterministic this way. But
+            // this shall not affect the correctness of this particular problem as we don't need diagnal neibours in
+            // our calculation.
+            MPI_Irecv(grid2[patchParam.m_AboveMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
+                    RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(&grid2[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
+                    LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(grid2[0], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(grid2[patchParam.m_NTotRow - 1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        }
         maxDiff = 0.0;
         for (size_t i = patchParam.m_AbovePadding; i < patchParam.m_NTotRow - patchParam.m_BelowPadding; ++i)
         {
@@ -214,6 +233,21 @@ int main(int argc, char**argv)
                 maxDiff = diff > maxDiff ? diff : maxDiff;
             }
         }
+
+        if (iterations > 0)
+        {
+            // Send results
+            MPI_Isend(&grid2[patchParam.m_AboveMargin][patchParam.m_LeftMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
+                    LEFT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(&grid2[patchParam.m_AboveMargin][patchParam.m_NTotCol - 1 - patchParam.m_RightMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_RightRank,
+                    RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid2[1], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_AboveRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid2[patchParam.m_NTotRow - 1 - patchParam.m_BelowMargin], patchParam.m_NTotCol, MPI_DOUBLE, patchParam.m_BelowRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        }
+
         tempGrid = grid2;
         grid2 = grid1;
         grid1 = tempGrid;
