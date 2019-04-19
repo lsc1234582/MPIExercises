@@ -100,29 +100,34 @@ int main(int argc, char**argv)
     pprintf("Info: Solving...\n");
     const double dx = GetDx(&params);
     const double dy = GetDy(&params);
-    double maxDiff;
+    double** diffs = AllocateInitGrid(params.m_NRow, params.m_NCol);
+    double maxDiff = params.m_Tolerance;
+    int diffsCount = 0;
     double** tempGrid = NULL;
     const double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
     do
     {
-        maxDiff = 0.0;
+        diffsCount = 0;
         for (size_t i = 1; i < params.m_NRow - 1; ++i)
         {
             for (size_t j = 1; j < params.m_NCol - 1; ++j)
             {
                 const double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 grid2[i][j] = term1 * term2;
-                //pprintf("%f\t", grid2[i][j]);
-                const double diff = fabs(grid2[i][j] - grid1[i][j]);
-                maxDiff = diff > maxDiff ? diff : maxDiff;
+                diffs[0][diffsCount++] = fabs(grid2[i][j] - grid1[i][j]);
             }
-            //pprintf("\n");
         }
+
+        maxDiff = params.m_Tolerance;
+        for (size_t i = 0; i < diffsCount; ++i)
+        {
+            maxDiff = diffs[0][i] > maxDiff ? diffs[0][i] : maxDiff;
+        }
+
         tempGrid = grid2;
         grid2 = grid1;
         grid1 = tempGrid;
         tempGrid = NULL;
-        //pprintf("MAX_DIFF: %f\n", maxDiff);
     } while (maxDiff > params.m_Tolerance);
 
     /* Write results */
