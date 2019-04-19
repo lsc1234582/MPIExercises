@@ -145,15 +145,26 @@ int main(int argc, char**argv)
         /* Exchange boundary values */
         MPI_Request reqs[4];
         int numReqs = 0;
-        MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
-                DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
-        MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        if (iterations == 0)
+        {
+            // Always need to fill the halo during initial iteration
+            MPI_Irecv(grid1[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(grid1[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid1[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        }
+        else
+        {
+            MPI_Irecv(grid2[0], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Irecv(grid2[horPatch.m_NTotRow - 1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+        }
         maxDiff = 0.0;
         x = horPatch.m_PatchX;
         for (size_t i = horPatch.m_AbovePadding; i < horPatch.m_NTotRow - horPatch.m_BelowPadding; ++i)
@@ -172,6 +183,16 @@ int main(int argc, char**argv)
             //pprintf("\n");
             x += dx;
         }
+
+        if (iterations > 0)
+        {
+            MPI_Isend(grid2[1], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_AboveRank,
+                    UP_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Isend(grid2[horPatch.m_NTotRow - 2], horPatch.m_NTotCol, MPI_DOUBLE, horPatch.m_BelowRank,
+                    DOWN_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
+            MPI_Waitall(numReqs, reqs, MPI_STATUSES_IGNORE);
+        }
+
         tempGrid = grid2;
         grid2 = grid1;
         grid1 = tempGrid;

@@ -178,7 +178,6 @@ function profile_parallel_row () {
     touch TIMEOUT_INIT
     SUMMARY_STR+="${profile_case_dir}: INIT TIMEDOUT"$'\n'
   fi
-  ${DIR}/../Combine $4 1 initial.combined.dat initial 2>&1 >> logs
   timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n $4 ${DIR}/../SolveParRow parameters.in 2>&1 >> logs
   if [[ $? -eq 124 ]]; then
     touch TIMEOUT_SOLVE
@@ -216,7 +215,6 @@ function profile_parallel () {
     touch TIMEOUT_INIT
     SUMMARY_STR+="${profile_case_dir}: INIT TIMEDOUT"$'\n'
   fi
-  ${DIR}/../Combine $4 $5 initial.combined.dat initial 2>&1 >> logs
   timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n ${num_proc} ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 >> logs
   if [[ $? -eq 124 ]]; then
     touch TIMEOUT_SOLVE
