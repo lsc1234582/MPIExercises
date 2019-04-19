@@ -310,10 +310,13 @@ if (( ${PROFILE_PAR} == 1 )); then
 fi
 
 # Compress the whole profile folder
-cd ..
-tar czf "${build_dir}.tar.gz" ${build_dir}
-
 duration=${SECONDS}
+cd ..
+tar czf "${build_dir}.tar.gz" ${build_dir};
+if [[ $? -eq 0 ]]; then
+  rm -r ${build_dir}
+fi
+
 # Print summary
 echo "===== Profile Summary ====="
 echo "${SUMMARY_STR}"
