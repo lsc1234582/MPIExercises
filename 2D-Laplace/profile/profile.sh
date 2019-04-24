@@ -24,14 +24,14 @@ declare -a NUM_COLS=(64 128 192 256)
 declare -a NUM_PATCH_X=(1 2 3)
 declare -a NUM_PATCH_Y=(1 2 3)
 #declare -a FUNCTIONS=(0)
-#declare -a NUM_ROWS=(256)
-#declare -a NUM_COLS=(256)
+#declare -a NUM_ROWS=(128)
+#declare -a NUM_COLS=(128)
 #declare -a NUM_PATCH_X=(1)
 #declare -a NUM_PATCH_Y=(1)
 ## Version
-PROFILE_SERIAL=1
-PROFILE_PARROW=0
-PROFILE_PAR=1
+PROFILE_SERIAL=$1
+PROFILE_PARROW=$2
+PROFILE_PAR=$3
 BUILD_CMD="make DEBUG=0"
 CLEAN_CMD="make clean"
 SOLVER_LAUNCH_CMD="mpirun --mca btl self,tcp"
@@ -110,8 +110,8 @@ function generate_meta_json () {
 "Solver": "$5",
 "SourceVersionTag": "${git_tag}",
 "BuildCommand": "${BUILD_CMD}",
-"NPX": $8,
-"NPY": $9,
+"NPX": "$8",
+"NPY": "$9",
 "SolverLaunchCommand": "$4",
 "Machine": "$(hostname)",
 "AdditionalTags": "${ADDITINAL_TAGS}",

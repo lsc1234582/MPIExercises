@@ -97,20 +97,11 @@ def transform_with_labels(df_tuples, axes, metrics):
 def is_integral(t):
     return t in [int, np.int64, np.int32]
 
-def select_cases(cases, sel_dict, composite_axes, metrics, legacy_load=False, copy_cases=False):
-    #group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
-    if copy_cases:
-        plot_df = cases.copy()
-    else:
-        plot_df = cases
+def is_floating(t):
+    return t in [float, np.float32, np.float64]
 
-    if len(sel_dict) != 0:
-        sel = list(map(list, zip(*list(sel_dict.items()))))
-        sel = np.all(cases.loc[:, sel[0]] == sel[1], axis=1)
-
-        plot_df = plot_df.loc[sel]
-
-    # Composite axes : composite axis name -> list(singular axes names)
+def add_composite_axes(cases, composite_axes):
+    # Composite axes : composite axis name -> func
     c_axes = {}
     for c_ax in composite_axes:
         assert("^" in c_ax)
@@ -124,25 +115,25 @@ def select_cases(cases, sel_dict, composite_axes, metrics, legacy_load=False, co
             assert(False)
         axes = c_ax.split("^")
         assert(len(axes) == 2)
-        c_axes[c_ax_name] = axes
+        if is_integral(cases.loc[:, axes[0]].dtype) and is_integral(cases.loc[:, axes[1]].dtype):
+            c_axes[c_ax_name] = (lambda subaxes: (lambda x: x[subaxes[0]] * x[subaxes[1]]))(axes)
+        else:
+            c_axes[c_ax_name] = (lambda subaxes: (lambda x: str(x[subaxes[0]]) + "^" + str(x[subaxes[1]])))(axes)
 
-    for i, row in plot_df.iterrows():
-        # Add composite axis
-        for c_ax_name, axes in c_axes.items():
-            v1 = plot_df.loc[i, axes[0]]
-            v2 = plot_df.loc[i, axes[1]]
-            if is_integral(type(v1)) and is_integral(type(v2)):
-                plot_df.loc[i, c_ax_name] = v1 * v2
-            else:
-                #print("hahaha")
-                #print(row)
-                #print(c_ax_name)
-                #print("hahaha")
-                plot_df.loc[i, c_ax_name] = str(v1) + "^" + str(v2)
-                #print(plot_df.loc[i, c_ax_name])
-                #print("hahaha2")
+    return cases.assign(**c_axes)
 
-        if legacy_load:
+def select_cases(cases, sel, metrics, legacy_load=False, copy_cases=False):
+    #group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
+    if copy_cases:
+        plot_df = cases.copy()
+    else:
+        plot_df = cases
+
+    if len(sel) != 0:
+        plot_df = plot_df.query(sel)
+
+    if legacy_load:
+        for i, row in plot_df.iterrows():
             try:
                 with open(os.path.join(row["CasePath"], "profile.json"), "r") as fh:
                     profile_json = json.load(fh)
@@ -154,23 +145,23 @@ def select_cases(cases, sel_dict, composite_axes, metrics, legacy_load=False, co
                 if not timeout_init and not timeout_solve:
                     print("ERROR: {} misses profile.json".format(row["CasePath"]))
                     raise e
-        # Make composite categorical
-        for c_ax_name, axes in c_axes.items():
-            c_ax_col = plot_df.loc[:, c_ax_name]
-            if c_ax_col.dtype != np.int and c_ax_col.dtype != np.float:
-                plot_df.loc[:, c_ax_name] = c_ax_col.astype("category")
 
     if "Speedup" in metrics:
-        max_runtime = np.max(plot_df.loc[:, "RunTime"])
-        plot_df = plot_df.assign(Speedup=lambda x: max_runtime / x["RunTime"])
+        plot_df = calculate_speedup(plot_df)
     if "RunTimeNorm" in metrics:
-        min_runtime = np.min(plot_df["RunTime"])
-        plot_df = plot_df.assign(RunTimeNorm=lambda x: x["RunTime"] / min_runtime)
-        plot_df["RunTimeNorm"] = plot_df["RunTime"] / min_runtime
+        plot_df = calculate_runtimenorm(plot_df)
 
-    #group_by_axes.append(metrics)
-    #print(group_by_axes)
     return plot_df
+
+def calculate_speedup(df):
+    max_runtime = np.max(df.loc[:, "RunTime"])
+    df = df.assign(Speedup=lambda x: max_runtime / x["RunTime"])
+    return df
+
+def calculate_runtimenorm(df):
+    min_runtime = np.min(df["RunTime"])
+    df = df.assign(RunTimeNorm=lambda x: x["RunTime"] / min_runtime)
+    return df
 
 def generate_plot_dict(cases, sel_dict, axes, metrics):
     group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
@@ -278,6 +269,17 @@ def generate_profile_cases(root, uncompress_folder=".profiletmp", delete_uncompr
         sh.rmtree(uncompress_folder, ignore_errors=True)
     return pd.DataFrame(cases)
 
+def handle_error_string(fn, err_pattern_str, rpl_str):
+    err_pattern = re.compile(err_pattern_str)
+    with open(fn, "r") as fh:
+        lines = fh.read()
+    match = err_pattern.search(lines)
+    if match is None:
+        return False
+    correct_str = err_pattern.sub(rpl_str, lines)
+    with open(fn, "w") as fh:
+        fh.write(correct_str)
+    return True
 
 def load_cases(root, metrics):
     """Discover all profile cases under a root dir. The profile cases can be in a folder or a tar.gz compressed archive
@@ -303,9 +305,19 @@ def load_cases(root, metrics):
             with open("profile.meta/meta.json", "r") as fh:
                 case_entry = json.load(fh)
         except Exception as e:
-            print("ERROR: {} misses meta.json".format(case_dir))
-            os.chdir(dir_stack.pop())
-            raise e
+            missing_npx = handle_error_string("profile.meta/meta.json",
+                    r'"NPX":\s*,',
+                    r'"NPX": 1,')
+            missing_npy = handle_error_string("profile.meta/meta.json",
+                    r'"NPY":\s*,',
+                    r'"NPY": 1,')
+            if missing_npx or missing_npy:
+                with open("profile.meta/meta.json", "r") as fh:
+                    case_entry = json.load(fh)
+            else:
+                print("ERROR: {} misses meta.json".format(case_dir))
+                os.chdir(dir_stack.pop())
+                raise e
         del case_entry["SolverTimeout"]
         del case_entry["Comments"]
 
@@ -324,9 +336,13 @@ def load_cases(root, metrics):
                 continue
             if os.path.exists("profile.map"):
                 print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
-                spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
-                with open("profile.json", "r") as fh:
-                    profile_json = json.load(fh)
+                #spr.run(["module", "load", "arm-hpc-tools/arm-forge"], shell=True, executable="/bin/bash")
+                #spr.run(["map", "--profile", "--export=profile.json", "profile.map"], shell=True,
+                #        executable="/bin/bash")
+                #with open("profile.json", "r") as fh:
+                #    profile_json = json.load(fh)
+                os.chdir(dir_stack.pop())
+                continue
             else:
                 print("WARNING: {} misses profile.json and profile.map".format(case_dir))
                 os.chdir(dir_stack.pop())
@@ -563,11 +579,15 @@ def load_cases_legacy(root):
             if not timeout_init and not timeout_solve:
                 if os.path.exists("profile.map"):
                     print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
-                    spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
-                    with open("profile.json", "r") as fh:
-                        case_profile = json.load(fh)
-                        case_entry["Machine"] = case_profile["info"]["machine"]
-                        del case_profile
+                    #spr.run(["module", "load", "arm-hpc-tools/arm-forge"], shell=True, executable="/bin/bash")
+                    #spr.run(["map", "--profile", "--export=profile.json", "profile.map"], shell=True,
+                    #        executable="/bin/bash")
+                    #with open("profile.json", "r") as fh:
+                    #    case_profile = json.load(fh)
+                    #    case_entry["Machine"] = case_profile["info"]["machine"]
+                    #    del case_profile
+                    os.chdir(dir_stack.pop())
+                    continue
                 else:
                     print("WARNING: {} misses profile.json and profile.map".format(case_dir))
                     os.chdir(dir_stack.pop())
