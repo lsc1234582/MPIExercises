@@ -419,10 +419,10 @@ def preprocess_cases(cases, legacy=False):
         cases.loc[(cases.loc[:, "NPY"]) == "", "NPY"] = 1
         cases.loc[:, "machine"] = cases.loc[:, "machine"].fillna("e121008-lin")
         cases = cases.assign(SolverTolerance=0.00000001,
-                XMin=1.0,
-                XMax=-1.0,
-                YMin=1.0,
-                YMax=-1.0)
+                XMin=-1.0,
+                XMax=1.0,
+                YMin=-1.0,
+                YMax=1.0)
     # Transform type
     if legacy:
         cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]] = cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]].applymap(int)
