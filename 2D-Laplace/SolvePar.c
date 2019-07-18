@@ -174,6 +174,7 @@ int main(int argc, char**argv)
     const double dy = patchParam.m_Dy;
     double maxDiff;
     double globalMaxDiff;
+    const double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
     double** tempGrid = NULL;
     int iterations = 0;
     do
@@ -207,10 +208,9 @@ int main(int argc, char**argv)
         {
             for (size_t j = patchParam.m_LeftPadding; j < patchParam.m_NTotCol - patchParam.m_RightPadding; ++j)
             {
-                double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
-                double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
+                const double term1 = (grid1[i-1][j] + grid1[i+1][j]) / (dx * dx) + (grid1[i][j-1] + grid1[i][j+1]) / (dy * dy);
                 grid2[i][j] = term1 * term2;
-                double diff = fabs(grid2[i][j] - grid1[i][j]);
+                const double diff = fabs(grid2[i][j] - grid1[i][j]);
                 maxDiff = diff > maxDiff ? diff : maxDiff;
             }
         }
