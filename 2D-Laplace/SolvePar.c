@@ -177,13 +177,15 @@ int main(int argc, char**argv)
     const double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
     double** tempGrid = NULL;
     int iterations = 0;
+    MPI_Request reqs[8];
+    int numReqs = 0;
     do
     {
+        // Reset number of requests
+        numReqs = 0;
         /* Exchange boundary values */
         /* Receive results */
         /* First exchange left and right columns horizontally */
-        MPI_Request reqs[8];
-        int numReqs = 0;
         if (iterations == 0)
         {
             // Always need to fill the halo during initial iteration
