@@ -177,12 +177,14 @@ int main(int argc, char**argv)
     const double term2 = (dx * dx * dy * dy) / (2 * dx * dx + 2 * dy * dy);
     double** tempGrid = NULL;
     int iterations = 0;
+    MPI_Request reqs[4];
+    int numReqs = 0;
     do
     {
+        // Reset number of requests
+        numReqs = 0;
         /* Exchange boundary values */
         /* First exchange left and right columns horizontally */
-        MPI_Request reqs[4];
-        int numReqs = 0;
         MPI_Irecv(grid1[patchParam.m_AboveMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,
                 RIGHT_TAG, MPI_COMM_WORLD, &reqs[numReqs++]);
         MPI_Isend(&grid1[patchParam.m_AboveMargin][patchParam.m_LeftMargin], patchParam.m_NRow, ColumnMarginElementT, patchParam.m_LeftRank,

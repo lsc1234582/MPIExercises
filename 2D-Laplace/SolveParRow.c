@@ -1,4 +1,5 @@
 /* *
+ * NOTE: Outdated; Not used
  * Solve laplace equation (parallel across rows).
  */
 #include "Utils.h"

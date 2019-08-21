@@ -242,6 +242,9 @@ fi
 mkdir ${build_dir}
 cd ${build_dir}
 
+# Disable Ubuntu ptrace control feature (https://static.docs.arm.com/101136/0701/userguide-forge.pdf)
+echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+
 SECONDS=0
 if [[ ${PROFILE_SERIAL} -eq 1 ]]; then
   # Run all serial profile cases
