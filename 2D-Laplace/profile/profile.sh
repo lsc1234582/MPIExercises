@@ -3,7 +3,7 @@
 # Make sure sampler interval is set to minimum (1ms) so that as many samples are collected
 
 export ALLINEA_SAMPLER_INTERVAL=1
-TIME_OUT=300
+TIME_OUT=1200
 SOLVER_TOLERANCE=0.00000001
 X_MIN=-1.0
 X_MAX=1.0
@@ -19,13 +19,13 @@ Y_MAX=1.0
 # different in impelementation.jn
 # Profile cases
 declare -a FUNCTIONS=(0 1 2 3)
-declare -a NUM_ROWS=(64 128 192 256)
-declare -a NUM_COLS=(64 128 192 256)
+declare -a NUM_ROWS=(128 256 384 512)
+declare -a NUM_COLS=(128 256 384 512)
 declare -a NUM_PATCH_X=(1 2 3)
 declare -a NUM_PATCH_Y=(1 2 3)
 #declare -a FUNCTIONS=(0)
-#declare -a NUM_ROWS=(128)
-#declare -a NUM_COLS=(128)
+#declare -a NUM_ROWS=(256)
+#declare -a NUM_COLS=(256)
 #declare -a NUM_PATCH_X=(1)
 #declare -a NUM_PATCH_Y=(1)
 ## Version
@@ -178,6 +178,7 @@ function profile_parallel_row () {
     touch TIMEOUT_INIT
     SUMMARY_STR+="${profile_case_dir}: INIT TIMEDOUT"$'\n'
   fi
+  ${DIR}/../Combine $4 1 initial.combined.dat initial 2>&1 >> logs
   timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n $4 ${DIR}/../SolveParRow parameters.in 2>&1 >> logs
   if [[ $? -eq 124 ]]; then
     touch TIMEOUT_SOLVE
@@ -215,6 +216,7 @@ function profile_parallel () {
     touch TIMEOUT_INIT
     SUMMARY_STR+="${profile_case_dir}: INIT TIMEDOUT"$'\n'
   fi
+  ${DIR}/../Combine $4 $5 initial.combined.dat initial 2>&1 >> logs
   timeout ${TIME_OUT} map --profile --output=profile ${SOLVER_LAUNCH_CMD} -n ${num_proc} ${DIR}/../SolvePar $4 $5 parameters.in 2>&1 >> logs
   if [[ $? -eq 124 ]]; then
     touch TIMEOUT_SOLVE
@@ -240,16 +242,19 @@ fi
 mkdir ${build_dir}
 cd ${build_dir}
 
+# Disable Ubuntu ptrace control feature (https://static.docs.arm.com/101136/0701/userguide-forge.pdf)
+echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+
 SECONDS=0
 if [[ ${PROFILE_SERIAL} -eq 1 ]]; then
   # Run all serial profile cases
-  for func in "${FUNCTIONS[@]}"
+  for (( i=0; i<${REP}; i++));
   do
-    for num_row in "${NUM_ROWS[@]}"
+    for func in "${FUNCTIONS[@]}"
     do
-      for num_col in "${NUM_COLS[@]}"
+      for num_row in "${NUM_ROWS[@]}"
       do
-        for (( i=0; i<${REP}; i++));
+        for num_col in "${NUM_COLS[@]}"
         do
           profile_serial ${func} ${num_row} ${num_col}
         done
@@ -260,21 +265,21 @@ fi
 
 # Run all parallel row profile cases
 if (( ${PROFILE_PARROW} == 1 )); then
-  for func in "${FUNCTIONS[@]}"
+  for (( i=0; i<${REP}; i++));
   do
-    for num_row in "${NUM_ROWS[@]}"
+    for func in "${FUNCTIONS[@]}"
     do
-      for num_col in "${NUM_COLS[@]}"
+      for num_row in "${NUM_ROWS[@]}"
       do
-        for num_patch_x in "${NUM_PATCH_X[@]}"
+        for num_col in "${NUM_COLS[@]}"
         do
-          if (( ${num_row} >= ${num_patch_x} ))
-          then
-            for (( i=0; i<${REP}; i++));
-            do
+          for num_patch_x in "${NUM_PATCH_X[@]}"
+          do
+            if (( ${num_row} >= ${num_patch_x} ))
+            then
               profile_parallel_row ${func} ${num_row} ${num_col} ${num_patch_x}
-            done
-          fi
+            fi
+          done
         done
       done
     done
@@ -283,23 +288,23 @@ fi
 
 # Run all parallel profile cases
 if (( ${PROFILE_PAR} == 1 )); then
-  for func in "${FUNCTIONS[@]}"
+  for (( i=0; i<${REP}; i++));
   do
-    for num_row in "${NUM_ROWS[@]}"
+    for func in "${FUNCTIONS[@]}"
     do
-      for num_col in "${NUM_COLS[@]}"
+      for num_row in "${NUM_ROWS[@]}"
       do
-        for num_patch_x in "${NUM_PATCH_X[@]}"
+        for num_col in "${NUM_COLS[@]}"
         do
-          for num_patch_y in "${NUM_PATCH_Y[@]}"
+          for num_patch_x in "${NUM_PATCH_X[@]}"
           do
-            if (( ${num_row} >= ${num_patch_x} && ${num_col} >= ${num_patch_y} ))
-            then
-              for (( i=0; i<${REP}; i++));
-              do
+            for num_patch_y in "${NUM_PATCH_Y[@]}"
+            do
+              if (( ${num_row} >= ${num_patch_x} && ${num_col} >= ${num_patch_y} ))
+              then
                 profile_parallel ${func} ${num_row} ${num_col} ${num_patch_x} ${num_patch_y}
-              done
-            fi
+              fi
+            done
           done
         done
       done
