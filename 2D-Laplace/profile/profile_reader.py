@@ -411,7 +411,7 @@ def add_metrics_dict(metrics, case_entry, profile_json):
 
 #help(glob)
 
-def preprocess_cases(cases, legacy=False):
+def post_load_case(cases, legacy=False):
     # Pre-processing
     # Fill in missing values (NPX, NPY)
     if legacy:
