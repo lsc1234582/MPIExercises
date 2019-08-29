@@ -221,14 +221,18 @@ def abspath(p):
     return os.path.join(curdir(), p)
 
 def generate_profile_cases(root, uncompress_folder=".profiletmp", delete_uncompress_folder=False, uncompress_member_func=None):
-    """TODO:
+    """ Yield all profile cases, one by one, from all profiles (directory and .tar.gz) at root folder.
+    If it's a .tar.gz archive, uncompress to uncompress_folder. This folder will be deleted if delete_uncompress_folder
+    is True.
+    Furthermore, if uncompress_folder already exists an exception will be raised.
     """
+
     dir_stack = []
-    cases = []
     dir_stack.append(curdir())
     os.chdir(root)
     if os.path.exists(uncompress_folder):
         raise Exception("Uncompress folder {} already exists".format(uncompress_folder))
+    print("Making temporary uncompress folder {}...".format(uncompress_folder))
     os.makedirs(uncompress_folder)
 
     def is_tar_gz_file(f):
@@ -238,36 +242,38 @@ def generate_profile_cases(root, uncompress_folder=".profiletmp", delete_uncompr
         print("INFO: profile folder/file {} detected".format(p))
         if p.split(os.path.sep)[0] == uncompress_folder:
             # Make sure do not re-glob uncompressed folders
+            print("Profile {} already exists in uncompress_folder {}. Skip uncompressing".format(p, uncompress_folder))
             continue
         elif os.path.isdir(p):
+            print("Profile {} is a directory".format(p))
             profile_dir = abspath(p)
         elif is_tar_gz_file(p):
+            print("Profile {} is a compressed tar ball".format(p))
             p_without_ext = os.path.splitext(p)[0]
             p_without_ext = os.path.splitext(p_without_ext)[0]
             tmp_p_dir = os.path.join(uncompress_folder, p_without_ext)
             os.makedirs(tmp_p_dir)
+            profile_dir = abspath(tmp_p_dir)
             with tarfile.open(p) as t:
                 if uncompress_member_func is None:
-                    t.extractall(path=uncompress_folder)
+                    t.extractall(path=profile_dir)
                 else:
-                    t.extractall(members=uncompress_member_func(t), path=uncompress_folder)
-            profile_dir = abspath(tmp_p_dir)
+                    t.extractall(members=uncompress_member_func(t), path=profile_dir)
         else:
+            print("Profile {} is not recognised. Skipping...".format(p))
             continue
 
         dir_stack.append(curdir())
         os.chdir(profile_dir)
         yield from glob.iglob("**/profilecase_*", recursive=True)
+        os.chdir(dir_stack.pop())
 
         if delete_uncompress_folder and is_tar_gz_file(p):
-            p_without_ext = os.path.splitext(p)[0]
-            p_without_ext = os.path.splitext(p_without_ext)[0]
-            tmp_p_dir = os.path.join(uncompress_folder, p)
-            sh.rmtree(tmp_p_dir, ignore_errors=True)
-        os.chdir(dir_stack.pop())
+            print("Deleting temporary profile folder {}...".format(profile_dir))
+            sh.rmtree(profile_dir, ignore_errors=True)
     if delete_uncompress_folder:
+        print("Deleting temporary uncompress folder {}...".format(uncompress_folder))
         sh.rmtree(uncompress_folder, ignore_errors=True)
-    return pd.DataFrame(cases)
 
 def handle_error_string(fn, err_pattern_str, rpl_str):
     err_pattern = re.compile(err_pattern_str)
@@ -337,12 +343,9 @@ def load_cases(root, metrics):
             if os.path.exists("profile.map"):
                 print("INFO: {} misses profile.json but found profile.map. Generating profile.json".format(case_dir))
                 #spr.run(["module", "load", "arm-hpc-tools/arm-forge"], shell=True, executable="/bin/bash")
-                #spr.run(["map", "--profile", "--export=profile.json", "profile.map"], shell=True,
-                #        executable="/bin/bash")
-                #with open("profile.json", "r") as fh:
-                #    profile_json = json.load(fh)
-                os.chdir(dir_stack.pop())
-                continue
+                spr.run(["map", "--profile", "--export=profile.json", "profile.map"])
+                with open("profile.json", "r") as fh:
+                    profile_json = json.load(fh)
             else:
                 print("WARNING: {} misses profile.json and profile.map".format(case_dir))
                 os.chdir(dir_stack.pop())
