@@ -17,6 +17,33 @@ import subprocess as spr
 solver_map = {k:v + 1 for v, k in enumerate(["Serial", "ParRow", "Par"])}
 func_map = {k:v + 1 for v, k in enumerate(["0", "1", "2", "3"])}
 
+int_axes = ["NRow", "NCol", "NPX", "NPY", "SampleSize"]
+float_axes = ["ComputeTime", "IOTime", "MPITime", "SolverTolerance", "XMax", "XMin", "YMax", "YMin"]
+str_axes = ["AdditionalTags", "BuildCommand", "Func", "Machine", "Solver", "SolverLaunchCommand", "SourceVersionTag"]
+all_all_index_axes = ["Machine", "SourceVersionTag", "BuildCommand",
+                  "Func", "Size", "NRow", "NCol", "SolverTolerance", "XMax", "XMin", "YMax", "YMin",
+                  "Solver", "Proc", "NPX", "NPY",
+                 "AdditionalTags",
+                 "StartDateTime", "EndDateTime", "TimeoutInit", "TimeoutSolve"]
+
+all_index_axes = ["Machine", "SourceVersionTag", "BuildCommand",
+                  "Func", "Size", "NRow", "NCol", "SolverTolerance", "XMax", "XMin", "YMax", "YMin",
+                "AdditionalTags",
+                "TimeoutInit", "TimeoutSolve",
+                "Solver", "Proc", "NPX", "NPY"]
+
+all_index_axes_clean = ["Machine", "SourceVersionTag", "BuildCommand",
+                  "Func", "Size", "NRow", "NCol", "SolverTolerance", "XMax", "XMin", "YMax", "YMin",
+                 "AdditionalTags",
+                "TimeoutInit", "TimeoutSolve",
+                "Solver", "Proc", "NPX", "NPY",
+                       "RepID"]
+
+composite_axes = ["Size:NRow^NCol", "Proc:NPX^NPY"]
+categorical_axes = ["AdditionalTags", "BuildCommand", "Func", "Machine", "Solver", "SolverLaunchCommand", "SourceVersionTag",
+        "TimeoutInit", "TimeoutSolve"]
+
+
 axis_map_map = {
     "Solver": lambda v: solver_map[v],
     "Func": lambda v: func_map[v],
@@ -102,6 +129,7 @@ def is_floating(t):
 
 def add_composite_axes(cases, composite_axes):
     # Composite axes : composite axis name -> func
+    cases = cases.copy()
     c_axes = {}
     for c_ax in composite_axes:
         assert("^" in c_ax)
@@ -415,24 +443,43 @@ def add_metrics_dict(metrics, case_entry, profile_json):
 #help(glob)
 
 def post_load_case(cases, legacy=False):
-    # Pre-processing
+    """ Post-processing after loading cases
+    TODO: Get rid of errorneous and inrecoverable cases.
+    """
+    cases = cases.copy()
     # Fill in missing values (NPX, NPY)
-    if legacy:
-        cases.loc[(cases.loc[:, "NPX"]) == "", "NPX"] = 1
-        cases.loc[(cases.loc[:, "NPY"]) == "", "NPY"] = 1
-        cases.loc[:, "machine"] = cases.loc[:, "machine"].fillna("e121008-lin")
-        cases = cases.assign(SolverTolerance=0.00000001,
-                XMin=-1.0,
-                XMax=1.0,
-                YMin=-1.0,
-                YMax=1.0)
-    # Transform type
-    if legacy:
-        cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]] = cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]].applymap(int)
-    # Make categories
-    categorical_axes = ["AdditionalTags", "BuildCommand", "Func", "Machine", "Solver", "SolverLaunchCommand", "SourceVersionTag",
-            "TimeoutInit", "TimeoutSolve"]
+    # if legacy:
+    #     cases.loc[(cases.loc[:, "NPX"]) == "", "NPX"] = 1
+    #     cases.loc[(cases.loc[:, "NPY"]) == "", "NPY"] = 1
+    #     cases.loc[:, "machine"] = cases.loc[:, "machine"].fillna("e121008-lin")
+    #     cases = cases.assign(SolverTolerance=0.00000001,
+    #             XMin=-1.0,
+    #             XMax=1.0,
+    #             YMin=-1.0,
+    #             YMax=1.0)
+    # # Transform type
+    # if legacy:
+    #     cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]] = cases.loc[:, ["NCol", "NRow", "NPX", "NPY"]].applymap(int)
+    # # Make categories
+    return cases
+
+
+def correct_dtypes(cases):
+    """ Pre-process: correct data types of the cases
+    """
+    cases = cases.copy()
+    #cases = cases.drop(["Unnamed: 0"], axis=1)
+
+    cases.loc[:, int_axes] = cases.loc[:, int_axes].fillna(0)
+    cases.loc[:, float_axes] = cases.loc[:, float_axes].fillna(0.0)
+    cases.loc[:, str_axes] = cases.loc[:, str_axes].fillna("")
+
+    cases.loc[:, int_axes] = cases.loc[:, int_axes].astype("int")
+    cases.loc[:, float_axes] = cases.loc[:, float_axes].astype("float")
+    cases.loc[:, str_axes] = cases.loc[:, str_axes].astype("str")
+
     cases.loc[:, categorical_axes] = cases.loc[:, categorical_axes].astype("category")
+
     return cases
 
 
