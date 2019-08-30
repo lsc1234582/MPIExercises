@@ -32,7 +32,7 @@ all_index_axes = ["Machine", "SourceVersionTag", "BuildCommand",
                 "TimeoutInit", "TimeoutSolve",
                 "Solver", "Proc", "NPX", "NPY"]
 
-all_index_axes_clean = ["Machine", "SourceVersionTag", "BuildCommand",
+all_index_axes_final = ["Machine", "SourceVersionTag", "BuildCommand",
                   "Func", "Size", "NRow", "NCol", "SolverTolerance", "XMax", "XMin", "YMax", "YMin",
                  "AdditionalTags",
                 "TimeoutInit", "TimeoutSolve",
@@ -149,6 +149,23 @@ def add_composite_axes(cases, composite_axes):
             c_axes[c_ax_name] = (lambda subaxes: (lambda x: str(x[subaxes[0]]) + "^" + str(x[subaxes[1]])))(axes)
 
     return cases.assign(**c_axes)
+
+def remove_useless_axes(cases):
+    return cases.drop(columns=["SolverLaunchCommand", "EndDateTime", "StartDateTime"])
+
+def add_repid(cases, all_index_axes):
+    # Add RepID
+    for ind, new_df in cases.groupby(all_index_axes):
+        rep_id = 1
+        for i, row in new_df.iterrows():
+            cases.at[i, "RepID"] = int(rep_id)
+            rep_id += 1
+    return cases.astype({"RepID":"int"})
+
+def index_axes(cases, all_index_axes):
+    cases.set_index(all_index_axes, inplace=True)
+    cases.sort_index(inplace=True)
+    return cases
 
 def select_cases(cases, sel, metrics, legacy_load=False, copy_cases=False):
     #group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
