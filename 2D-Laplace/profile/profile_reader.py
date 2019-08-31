@@ -191,6 +191,85 @@ def create_unstack_cases(cases):
     cases_unstacked.columns.names=["Solver", "Proc", "NPX", "NPY", "Metrics"]
     return cases_unstacked
 
+#################################### Case enhancement ######################################
+def calculate_par_solver_speedup(cases_unstacked):
+    # Calculate parallel speed up (per solver) for Par solvers
+    num_npx = len(get_index_levels(cases_unstacked, "NPX", 1))
+    num_npy = len(get_index_levels(cases_unstacked, "NPY", 1))
+    serial_runtime = cases_unstacked.xs(["Par", "RunTime", 1, 1, 1], level=["Solver", "Metrics", "Proc", "NPX", "NPY"], axis=1)
+    ind = cases_unstacked.xs(["Par", "RunTime"], level=["Solver", "Metrics"], axis=1, drop_level=False).columns
+    serial_runtime_dup = pd.concat([serial_runtime for _ in range(num_npx * num_npy)], axis=1)
+    serial_runtime_dup.columns = ind
+    cases_speedup_pers = serial_runtime_dup / cases_unstacked.xs(["Par", "RunTime"], level=["Solver", "Metrics"], axis=1, drop_level=False)
+
+    cases_speedup_pers = cases_speedup_pers.rename({"RunTime": "ParSpeedupPerSolver"}, axis=1)
+    return cases_speedup_pers
+
+def calculate_par_solver_efficiency(cases_speedup_pers):
+    # Calculate efficiency (per solver) for Par solvers
+    cases_unstacked_all_metrics_copy = cases_speedup_pers.xs("ParSpeedupPerSolver", level="Metrics", axis=1, drop_level=False).copy()
+    ind = cases_unstacked_all_metrics_copy.index
+    col = cases_unstacked_all_metrics_copy.columns
+    proc_ind = cases_unstacked_all_metrics_copy.columns.names.index("Proc")
+    proc_codes = cases_unstacked_all_metrics_copy.columns.codes[proc_ind]
+    procs = [cases_unstacked_all_metrics_copy.columns.levels[proc_ind][c] for c in proc_codes]
+    procs = pd.DataFrame([procs for _ in range(len(cases_unstacked_all_metrics_copy))], index=ind, columns=col)
+    cases_efficiencies_pers = (cases_unstacked_all_metrics_copy / procs).rename({"ParSpeedupPerSolver": "ParEfficiencyPerSolver"}, axis=1)
+    return cases_efficiencies_pers
+
+def calculate_runtimemultiplier(cases_unstacked, all_index_axes_final, solver):
+    cases_size_unstacked = cases_unstacked.stack(["Solver", "Proc", "NPX", "NPY"]).reorder_levels(all_index_axes_final).sort_index(axis=1).reset_index().copy()
+    cases_size_unstacked.set_index(all_index_axes_final, inplace=True)
+    cases_size_unstacked.sort_index(inplace=True)
+    cases_size_unstacked = cases_size_unstacked.unstack(["Solver", "Size", "NRow", "NCol"]).reorder_levels(["Solver", "Size", "NRow", "NCol", "Metrics"], axis=1).sort_index(axis=1)
+    cases_size_unstacked.columns.names=["Solver", "Size", "NRow", "NCol", "Metrics"]
+
+    size_levels = get_index_levels(cases_size_unstacked, "Size", 1)
+    basesize = size_levels[0]
+
+    nrow_levels = get_index_levels(cases_size_unstacked, "NRow", 1)
+    basenrow = nrow_levels[0]
+
+    ncol_levels = get_index_levels(cases_size_unstacked, "NCol", 1)
+    basencol = ncol_levels[0]
+
+    cases_runtimemult = []
+    #print(len(size_levels))
+    basesize_runtime = cases_size_unstacked.xs([solver, "RunTime", basesize, basenrow, basencol], level=["Solver", "Metrics", "Size", "NRow", "NCol"], axis=1)
+    ind = cases_size_unstacked.xs([solver, "RunTime"], level=["Solver", "Metrics"], axis=1, drop_level=False).columns
+    basesize_runtime_dup = pd.concat([basesize_runtime for _ in range(len(nrow_levels) * len(ncol_levels))], axis=1)
+    basesize_runtime_dup.columns = ind
+    cases_runtimemult.append(cases_size_unstacked.xs([solver, "RunTime"], level=["Solver", "Metrics"], axis=1, drop_level=False) / basesize_runtime_dup)
+
+    #cases_size_unstacked.xs(["RunTime"], level=["Metrics"], axis=1, drop_level=False)
+    cases_runtimemult = pd.concat(cases_runtimemult, axis=1).rename({"RunTime": "RunTimeMultiplier"}, axis=1)
+
+    cases_runtimemult = cases_runtimemult.stack(["Solver", "Size", "NRow", "NCol"]).reorder_levels(all_index_axes_final).sort_index(axis=1).reset_index().copy()
+    cases_runtimemult.set_index(all_index_axes_final, inplace=True)
+    cases_runtimemult.sort_index(inplace=True)
+    cases_runtimemult = cases_runtimemult.unstack(["Solver", "Proc", "NPX", "NPY"]).reorder_levels(["Solver", "Proc", "NPX", "NPY", "Metrics"], axis=1).sort_index(axis=1)
+    cases_runtimemult.columns.names=["Solver", "Proc", "NPX", "NPY", "Metrics"]
+    return cases_runtimemult
+
+
+def enhance_serial_cases(cases_unstacked, all_index_axes_final):
+    cases_runtimemult = calculate_runtimemultiplier(cases_unstacked, all_index_axes_final, "Serial")
+    cases_unstacked_all_metrics = pd.concat([cases_unstacked,
+                                            cases_runtimemult], axis=1, sort=True)
+    return cases_unstacked_all_metrics
+
+
+def enhance_par_cases(cases_unstacked, all_index_axes_final):
+    cases_speedup_pers = calculate_par_solver_speedup(cases_unstacked)
+    cases_efficiencies_pers = calculate_par_solver_efficiency(cases_speedup_pers)
+    cases_runtimemult = calculate_runtimemultiplier(cases_unstacked, all_index_axes_final, "Par")
+    cases_unstacked_all_metrics = pd.concat([cases_unstacked,
+                                            cases_speedup_pers,
+                                            cases_efficiencies_pers,
+                                            cases_runtimemult], axis=1, sort=True)
+    return cases_unstacked_all_metrics
+
+
 def select_cases(cases, sel, metrics, legacy_load=False, copy_cases=False):
     #group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
     if copy_cases:
