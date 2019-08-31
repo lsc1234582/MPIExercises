@@ -61,6 +61,8 @@ metrics_2_ylabel = {
 
 # profile stats
 
+################################ Utilities ##############################
+
 def curdir():
     return os.path.abspath(os.curdir)
 
@@ -127,6 +129,22 @@ def is_integral(t):
 def is_floating(t):
     return t in [float, np.float32, np.float64]
 
+def get_index_levels(df, index_name, axis=0):
+    """ Get a list of levels for a index in a potentially multi-index df
+    """
+    if axis == 0:
+        index = df.index
+    elif axis == 1:
+        index = df.columns
+    else:
+        assert(False)
+
+    # The numeric index of the index associated with index_name
+    index_idx = index.names.index(index_name)
+    return index.levels[index_idx]
+
+################################### Case processing ######################################
+
 def add_composite_axes(cases, composite_axes):
     # Composite axes : composite axis name -> func
     cases = cases.copy()
@@ -153,6 +171,7 @@ def add_composite_axes(cases, composite_axes):
 def remove_useless_axes(cases):
     return cases.drop(columns=["SolverLaunchCommand", "EndDateTime", "StartDateTime"])
 
+
 def add_repid(cases, all_index_axes):
     # Add RepID
     for ind, new_df in cases.groupby(all_index_axes):
@@ -166,6 +185,11 @@ def index_axes(cases, all_index_axes):
     cases.set_index(all_index_axes, inplace=True)
     cases.sort_index(inplace=True)
     return cases
+
+def create_unstack_cases(cases):
+    cases_unstacked = cases.unstack(["Solver", "Proc", "NPX", "NPY"]).reorder_levels(["Solver", "Proc", "NPX", "NPY", 0], axis=1).sort_index(axis=1)
+    cases_unstacked.columns.names=["Solver", "Proc", "NPX", "NPY", "Metrics"]
+    return cases_unstacked
 
 def select_cases(cases, sel, metrics, legacy_load=False, copy_cases=False):
     #group_by_axes = axes[0].split("^") if len(axes) == 1 and "^" in axes[0] else axes
