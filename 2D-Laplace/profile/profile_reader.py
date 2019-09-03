@@ -564,9 +564,14 @@ def add_metrics_dict(metrics, case_entry, profile_json):
 
 def post_load_case(cases, legacy=False):
     """ Post-processing after loading cases
-    TODO: Get rid of errorneous and inrecoverable cases.
     """
     cases = cases.copy()
+
+    # TODO: Get rid of errorneous and inrecoverable cases.
+    # Rename axes
+    cases.loc[cases.SourceVersionTag=="v1.0-01term2out", "SourceVersionTag"] = "v1.0"
+    cases.loc[cases.SourceVersionTag=="v1.1-01term2out", "SourceVersionTag"] = "v1.1"
+    cases.loc[cases.SourceVersionTag=="v1.2.1-01term2out", "SourceVersionTag"] = "v1.2.1"
     # Fill in missing values (NPX, NPY)
     # if legacy:
     #     cases.loc[(cases.loc[:, "NPX"]) == "", "NPX"] = 1
